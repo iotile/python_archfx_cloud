@@ -309,6 +309,15 @@ To deploy to pypi:
 1. Once everythin commited, create a new version Tag. Deployment is triggered from that:
 
 ```bash
+python setup.py test
+python setup.py sdist bdist_wheel
+twine check dist/*
+twine upload dist/*
+```
+
+or with CD:
+
+```bash
 git tag -a v0.9.13 -m "v0.9.13"
 git push origin v0.9.13
 ```
