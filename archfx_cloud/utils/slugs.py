@@ -1,4 +1,35 @@
-from .convert import *
+import re
+import unicodedata
+from datetime import datetime
+from functools import lru_cache
+
+from .convert import (
+    gid_join,
+    gid_split,
+    fix_gid,
+    int2did,
+    int16gid,
+    int2pid,
+    int2vid,
+    gid2int,
+)
+
+def slugify(value: str, allow_unicode: bool = False) -> str:
+    """
+    Convert to ASCII if 'allow_unicode' is False. Convert spaces to hyphens.
+    Remove characters that aren't alphanumerics, underscores, or hyphens.
+    Also strip leading and trailing whitespace.
+    """
+    if isinstance(value, int):
+        value = str(value)
+    assert isinstance(value, str)
+    if allow_unicode:
+        value = unicodedata.normalize('NFKC', value)
+    else:
+        value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+    value = re.sub(r'[^\w\s-]', '', value).strip()
+    return re.sub(r'[-\s]+', '-', value).lower()
+
 
 class ArchFxCloudSlug(object):
     _slug = None
@@ -139,12 +170,13 @@ class ArchFxVariableID(ArchFxCloudSlug):
             id_ = '-'.join([scope, var])
 
         if isinstance(id_, int):
+            print(id_)
             if id_ < 0 or id_ >= pow(16, 8):
                 raise ValueError('ArchFxVariableID: ID should be greater or equal than zero and less than 16^8')
             vid = int2vid(id_)
         else:
             if not isinstance(id_, str):
-                raise ValueError('ArchFxVariabeID: must be an int or str: {}'.format(type(id_)))
+                raise ValueError('ArchFxVariableID: must be an int or str: {}'.format(type(id_)))
             parts = gid_split(id_)
             if len(parts) == 1:
                 vid = parts[0]
@@ -167,6 +199,7 @@ class ArchFxVariableID(ArchFxCloudSlug):
         """Create slug, and ensure it is formatted XXXX-YYYYY"""
         self._slug = fix_gid(id_, 2)
 
+    @lru_cache()
     def get_id(self):
         """Return integer representation of ID"""
         parts = gid_split(self._slug)
@@ -175,21 +208,25 @@ class ArchFxVariableID(ArchFxCloudSlug):
         return gid2int(parts[0])
 
     @property
+    @lru_cache()
     def var_hex(self):
         """Return HEX representation of the variable id (no scope)"""
         return self._slug[5:9]
 
     @property
+    @lru_cache()
     def scope_hex(self):
         """Return HEX representation of the scope (no scope)"""
         return self._slug[0:4]
 
     @property
+    @lru_cache()
     def var_id(self):
         """Return the 16 Least significant bits representing the variable id"""
         return 0xFFFF & self.get_id()
 
     @property
+    @lru_cache()
     def scope(self):
         """Return the 16 Most significant bits representing the variable scope"""
         return (0xFFFF0000 & self.get_id()) >> 16
@@ -208,50 +245,77 @@ class ArchFxStreamSlug(ArchFxCloudSlug):
         'pa': 'sa',
         'ps': 'ss'
     }
+    
     def __init__(self, sid=None):
-        if sid:
-            if not isinstance(sid, str):
-                raise ValueError("Variable ID must be int or str")
-            parts = gid_split(sid)
-            if len(parts) != 4:
-                raise ValueError("Stream slug must have three terms: s--<prj>--<dev>--<var>")
-            if parts[1] == '':
-                parts[1] = '0000-0000'
-            # Make sure we expand to ensure we end up with a 45 char string
-            # expanding with any missing zeros
-            self._slug = gid_join([
-                parts[0],
-                ArchFxParentSlug(parts[1]).formatted_id(),
-                ArchFxDeviceSlug(parts[2]).formatted_id(),
-                str(ArchFxVariableID(parts[3]))
-            ])
-            self.stype = parts[0]
+        if not sid:
+            self.stype = 'sd'
+            return
 
-    def from_parts(self, parent, device, variable):
+        if not isinstance(sid, str):
+            raise ValueError("Stream ID must be str")
+
+        parts = gid_split(sid)
+        if not 4 <= len(parts) <= 5:
+            raise ValueError("Stream slug must have at least four terms: s<type>--<prnt>--<dev>--<var> - "
+                             "and at most five: s<type>--<prnt>--<dev>--<var>--<start>")
+
+        if parts[1] == '':
+            parts[1] = '0000-0000'
+
+        parts[0] = parts[0]  # TODO: get parts[0] from parent
+        parts[1] = ArchFxParentSlug(parts[1]).formatted_id()
+        parts[2] = ArchFxDeviceSlug(parts[2]).formatted_id()
+        parts[3] = str(ArchFxVariableID(parts[3]))
+        if len(parts) == 5:
+            # TODO: check
+            parts[4] = parts[4]
+
+        # Make sure we expand to ensure we end up with a 63 char string
+        # expanding with any missing zeros
+        self._slug = gid_join(parts)
+        self.stype = parts[0]
+
+    def from_parts(self, parent, device, variable, start=None):
         """
         Build slug from the different parts: Parent, Device and Variable
         """
+        parts = []
+
         if parent is None or parent == '':
             # It is legal to pass something like `s----1234--5001` as projects are optional
             parent = ArchFxParentSlug(0)
             self.stype = 'sd'
         else:
-            parent = ArchFxParentSlug(parent)
+            if not isinstance(parent, ArchFxParentSlug):
+                parent = ArchFxParentSlug(parent)
             self.stype = self.STYPES_FROM_PTYPE[parent.get_type()]
+        parts.append(self.stype)
+        parts.append(parent.formatted_id())
+
         if device is None or device == '':
             # It is legal to pass something like `s--0123----5001` as projects are optional
             device = ArchFxDeviceSlug(0)
         elif not isinstance(device, ArchFxDeviceSlug):
             # Allow 64bits to handle blocks
             device = ArchFxDeviceSlug(device, allow_64bits=True)
+        parts.append(device.formatted_id())
+
         if not isinstance(variable, ArchFxVariableID):
             variable = ArchFxVariableID(variable)
-        self._slug = gid_join([
-            self.stype,
-            parent.formatted_id(),
-            device.formatted_id(),
-            str(variable)
-        ])
+        parts.append(str(variable))
+
+        if start is not None:
+            if isinstance(start, datetime):
+                start = int(start.timestamp() * 10**6)
+            else:
+                # Else assume it's already in acceptable form
+                start = int(start)
+                if len(str(start)) > 16:
+                    raise ValueError(f'Start timestamp of {start} us is too big (must fit into 16 decimal places)')
+
+            parts.append(f'{start:016}')
+
+        self._slug = gid_join(parts)
 
     def get_parts(self):
         """
@@ -261,18 +325,21 @@ class ArchFxStreamSlug(ArchFxCloudSlug):
         - Score: 0000 for devices or something else for machines
         - device: ID of the device or machine
         - variable: ID of the variable
+        - start: Microsecond unix timestamp of the stream start
         """
         parts = gid_split(self._slug)
-        assert len(parts) == 4
-        parent = ArchFxParentSlug(parts[1]) if parts[1] else ArchFxParentSlug(0)
+        assert 4 <= len(parts) <= 5
+        parent = ArchFxParentSlug(parts[1], ptype=self.PTYPES_FROM_STYPE[parts[0]]) if parts[1] else ArchFxParentSlug(0)
         device_parts = parts[2].split('-')
         variable = parts[3]
+        start = parts[4] if len(parts) == 5 else None
         result = {
             'parent': str(parent),
             'block': device_parts[0],
             'scope': device_parts[1],
             'device': '-'.join(device_parts[2:]),
-            'variable': str(variable)
+            'variable': str(variable),
+            'start': start
         }
         return result
 

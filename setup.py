@@ -6,7 +6,7 @@ setup(name='archfx_cloud',
     description='Python client for https://archfx.io',
     url='https://github.com/iotile/python_archfx_cloud',
     author='Arch Systems Inc.',
-    author_email="info@arch-iot.com",
+    author_email="info@archsys.io",
     license='MIT',
     packages=[
         'archfx_cloud',
@@ -20,7 +20,7 @@ setup(name='archfx_cloud',
         'requests>=2.21.0',
         'python-dateutil'
     ],
-    keywords=["iotile", "archfx", "arch", "iot", "automation"],
+    keywords=["iotile", "archfx", "arch", "iiot", "automation"],
     classifiers=[
         "Programming Language :: Python",
         "Development Status :: 4 - Beta",

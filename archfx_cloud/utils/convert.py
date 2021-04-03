@@ -1,14 +1,30 @@
-int16gid = lambda n: '-'.join(['{:04x}'.format(n >> (i << 4) & 0xFFFF) for i in range(0, 1)[::-1]])
-int32gid = lambda n: '-'.join(['{:04x}'.format(n >> (i << 4) & 0xFFFF) for i in range(0, 2)[::-1]])
-int48gid = lambda n: '-'.join(['{:04x}'.format(n >> (i << 4) & 0xFFFF) for i in range(0, 3)[::-1]])
-int64gid = lambda n: '-'.join(['{:04x}'.format(n >> (i << 4) & 0xFFFF) for i in range(0, 4)[::-1]])
+# pylint: disable=invalid-name
+def int16gid(n):
+    return '-'.join(['{:04x}'.format(n >> (i << 4) & 0xFFFF) for i in range(0, 1)[::-1]])
 
-int2did = lambda n: int64gid(n)
-int2did_short = lambda n: int48gid(n)
-int2fleet_id = lambda n: int48gid(n)
-int2pid = lambda n: int32gid(n)
-int2vid = lambda n: int16gid(n)
-int2bid = lambda n: int16gid(n)
+
+def int32gid(n):
+    return '-'.join(['{:04x}'.format(n >> (i << 4) & 0xFFFF) for i in range(0, 2)[::-1]])
+
+
+def int48gid(n):
+    return '-'.join(['{:04x}'.format(n >> (i << 4) & 0xFFFF) for i in range(0, 3)[::-1]])
+
+
+def int64gid(n):
+    return '-'.join(['{:04x}'.format(n >> (i << 4) & 0xFFFF) for i in range(0, 4)[::-1]])
+
+
+def int2bid(n):
+    return int16gid(n)
+# pylint: enable=invalid-name
+
+
+int2did = int64gid
+int2did_short = int48gid
+int2fleet_id = int48gid
+int2pid = int32gid
+int2vid = int32gid
 
 gid_split = lambda val: val.split('--')
 
@@ -44,7 +60,7 @@ def formatted_dbid(bid, did):
 
 def formatted_machine_id(did, bid='0000', mid='0001'):
     """
-    Formatted Global Machine ID: m--XXXX-YYYY-ZZZZ-ZZZZ
+    Formatted Global Machine ID: d--XXXX-YYYY-ZZZZ-ZZZZ
     XXXX: 16bit Block ID
     YYYY: 16bit Machine or Scope ID
     ZZZZ: 32bit ID
@@ -80,32 +96,11 @@ def formatted_gdid(did, bid='0000'):
     return gid_join(['d', did])
 
 
-def formatted_gvid(pid, vid):
-    """
-    Formatted Global Variable ID: v--0000-0001--5000
-    """
-    pid = fix_gid(pid, 2)
-    return gid_join(['v', pid, vid])
-
-
 def formatted_gsid(pid, did, vid):
     """Formatted Global Stream ID: s--0000-0001--0000-0000-0000-0001--5000"""
     pid = fix_gid(pid, 2)
     did = fix_gid(did, 4)
     return gid_join(['s', pid, did, vid])
-
-
-def formatted_gfid(pid, did, vid):
-    """
-    Formatted Global Filter ID: f--0000-0001--0000-0000-0000-0001--5000
-    or if no device: f--0000-0001----5000
-    """
-    pid = fix_gid(pid, 2)
-    if did:
-        did = fix_gid(did, 4)
-    else:
-        did = ''
-    return gid_join(['f', pid, did, vid])
 
 
 def formatted_gtid(did, index):

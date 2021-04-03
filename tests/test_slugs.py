@@ -1,7 +1,13 @@
 import unittest2 as unittest
 import pytest
 
-from archfx_cloud.utils.slugs import *
+from archfx_cloud.utils.slugs import (
+    ArchFxParentSlug,
+    ArchFxDeviceSlug,
+    ArchFxVariableID,
+    ArchFxStreamSlug,
+    ArchFxStreamerSlug
+)
 
 
 class GIDTestCase(unittest.TestCase):
@@ -72,6 +78,47 @@ class GIDTestCase(unittest.TestCase):
         self.assertRaises(ValueError, ArchFxDeviceSlug, -5)
         self.assertRaises(ValueError, ArchFxDeviceSlug, pow(16,16))
         self.assertRaises(ValueError, ArchFxDeviceSlug, pow(16,12), False)
+
+    def test_variable_slugs(self):
+
+        var1 = ArchFxVariableID('5051')
+        self.assertEqual(str(var1), '0000-5051')
+        self.assertEqual(var1.formatted_id(), '0000-5051')
+        self.assertEqual(var1.get_id(), 0x5051)
+        self.assertEqual(var1.var_id, 0x5051)
+        self.assertEqual(var1.var_hex, '5051')
+        self.assertEqual(var1.scope, 0)
+
+        var2 = ArchFxVariableID(0x5051)
+        self.assertEqual(str(var2), '0000-5051')
+        self.assertEqual(var2.formatted_id(), '0000-5051')
+
+        var3 = ArchFxVariableID(0x10000 | 0x5051)
+        self.assertEqual(str(var3), '0001-5051')
+        self.assertEqual(var3.formatted_id(), '0001-5051')
+        self.assertEqual(var3.get_id(), 0x15051)
+        self.assertEqual(var3.var_hex, '5051')
+        self.assertEqual(var3.scope_hex, '0001')
+        self.assertEqual(var3.var_id, 0x5051)
+        self.assertEqual(var3.scope, 1)
+
+        var4 = ArchFxVariableID('0001-5051')
+        self.assertEqual(str(var4), '0001-5051')
+        self.assertEqual(var4.formatted_id(), '0001-5051')
+        self.assertEqual(var4.get_id(), 0x15051)
+        self.assertEqual(var4.var_hex, '5051')
+        self.assertEqual(var4.scope_hex, '0001')
+        self.assertEqual(var4.var_id, 0x5051)
+        self.assertEqual(var4.scope, 1)
+
+        var5 = ArchFxVariableID('f5051')
+        self.assertEqual(str(var5), '000f-5051')
+        self.assertEqual(var5.formatted_id(), '000f-5051')
+        self.assertEqual(var5.get_id(), 0xF5051)
+        self.assertEqual(var5.var_hex, '5051')
+        self.assertEqual(var5.scope_hex, '000f')
+        self.assertEqual(var5.var_id, 0x5051)
+        self.assertEqual(var5.scope, 0xF)
 
     def test_stream_slug(self):
         self.assertRaises(ValueError, ArchFxStreamSlug, 5)

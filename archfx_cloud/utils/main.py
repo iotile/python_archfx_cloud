@@ -2,10 +2,13 @@ import sys
 import logging
 import argparse
 import getpass
+import configparser
 
 from archfx_cloud.api.connection import Api
+from archfx_cloud.api.exceptions import HttpClientError
 
-logger = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
+CONFIG = configparser.ConfigParser()
 
 
 class BaseMain(object):
@@ -13,6 +16,7 @@ class BaseMain(object):
     args = None
     api = None
     domain = 'https://arch.archfx.io'
+    logging_level = logging.INFO
 
     def __init__(self):
         """
@@ -23,8 +27,19 @@ class BaseMain(object):
         Additional arguments can be configured by overwriting the add_extra_args() method
         Logging configuration can be changed by overwritting the config_logging() method
         """
+        CONFIG.read('.ini')
         self.parser = argparse.ArgumentParser(description=__doc__)
-        self.parser.add_argument('-u', '--user', dest='email', type=str, help='Email used for login')
+        self.parser.add_argument(
+            '-u', '--user', dest='email', type=str, help='Email used for login'
+        )
+        self.parser.add_argument(
+            '--server', dest='server_type', type=str, default='dev',
+            help='Server Type: prod/stage/dev'
+        )
+        self.parser.add_argument(
+            '--customer', dest='customer', type=str, default='stage',
+            help='Customer slug: arch, stage, acme'
+        )
 
         self.add_extra_args()
 
@@ -32,11 +47,11 @@ class BaseMain(object):
         self.config_logging()
 
         if not self.args.email:
-            logger.error('User email is required: --user')
+            LOG.error('User email is required: --user')
             sys.exit(1)
 
     def _critical_exit(self, msg):
-        logger.error(msg)
+        LOG.error(msg)
         sys.exit(1)
 
     def main(self):
@@ -67,7 +82,7 @@ class BaseMain(object):
         Overwrite to change the way the logging package is configured
         :return: Nothing
         """
-        logging.basicConfig(level=logging.INFO,
+        logging.basicConfig(level=self.logging_level,
                             format='[%(asctime)-15s] %(levelname)-6s %(message)s',
                             datefmt='%d/%b/%Y %H:%M:%S')
 
@@ -78,20 +93,48 @@ class BaseMain(object):
         """
         pass
 
-    def get_domain(self):
+    def get_domain(self) -> str:
         """
-        Overwrite to change the default domain
-        :return: URL for server. e.g. 'https://arch.archfx.io'
+        Figure out server domain URL based on --server and --customer args
         """
-        return self.domain
+        SERVER_TYPE = {
+            'prod': 'https://{}.archfx.io',
+            'dev': 'http://127.0.0.1:8000'
+        }
 
-    def login(self):
+        domain_template = SERVER_TYPE[self.args.server_type]
+        if self.args.server_type == 'prod':
+            return domain_template.format(self.args.customer)
+        return SERVER_TYPE.get(self.args.server_type)
+
+    def login(self) -> bool:
         """
-        Overwrite to change how to login to the server
-        :return: True if successful
+        Check if we can user token from .ini
         """
+
+        # If there is a token defined, check if legal
+        ini_token_key = f'c-{self.args.customer}'
+        try:
+            ini_cloud = CONFIG[ini_token_key]
+            token = ini_cloud.get('token')
+        except (configparser.NoSectionError, KeyError):
+            token = None
+
+        if token:
+            self.api.set_token(token)
+
+        try:
+            user = self.api.account.get()
+            LOG.info('Using token for {}'.format(user['results'][0]['email']))
+            return True
+        except HttpClientError as err:
+            LOG.debug(err)
+            LOG.info('Token is illegal or has expired')
+
         password = getpass.getpass()
         ok = self.api.login(email=self.args.email, password=password)
+        if ok:
+            LOG.info('Welcome {0}'.format(self.args.email))
         return ok
 
     def logout(self):
@@ -114,7 +157,7 @@ class BaseMain(object):
         This function MUST be overwritten to do actual work after logging into the Server
         :return: Nothing
         """
-        logger.warning('No actual work done')
+        LOG.warning('No actual work done')
 
     def after_logout(self):
         """

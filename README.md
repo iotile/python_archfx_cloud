@@ -1,7 +1,6 @@
 # ArchFX Cloud Python API Package
 
-[![PyPI version](https://img.shields.io/pypi/v/archfx_cloud.svg)](https://pypi.python.org/pypi/archfx-cloud) 
-
+[![PyPI version](https://img.shields.io/pypi/v/archfx_cloud.svg)](https://pypi.python.org/pypi/archfx-cloud)
 
 A python library for interacting with [ArchFX Cloud](https://archfx.io) Rest API.
 
@@ -9,7 +8,7 @@ A python library for interacting with [ArchFX Cloud](https://archfx.io) Rest API
 
 When it comes to using Python packages, it is always recommened you use a Python Virtual Env. Using Python 3, you can simply do
 
-```
+```bash
 python3 -m venv  ~/.virtualenv/archfx-cloud
 ```
 
@@ -17,7 +16,7 @@ or follow one of the many tutorials to setup Python virtual environments.
 
 Once you have set up a virtual, env, simply install the package with:
 
-```
+```bash
 pip install archfx_cloud
 ```
 
@@ -36,7 +35,7 @@ of assembly lines. Areas usually represent Buildings or a set of machines of the
 but do not need to. But like areas, they do need to always belong to a Site.
 - **machine**: A Machine represents the physical machine we are extracting data from. It is a virtual concept but
 is usually one to one with a machine in the factory, and has a brand, model, serial number and maybe asset number.
-- **device**: A device represent IOTile HW Taps, and/or SW connectors that extract data from a Machine. a Given
+- **device**: A device represent IOTile HW Taps, and/or Factory SW connectors that extract data from a Machine. a Given
 **Machine** may have multiple HW taps or even multiple SW connectors, which is one there is a one to many
 relationship between Machines and Devices
 - **stream**: Streams represent a globally unique instance of data comming from a given device (sensor).
@@ -76,17 +75,15 @@ You can see how:
 - Slug components are separated by a ‘--’ string
 - A one or two character letter(s) represents the type of slug: 'p?', 'd', and 's?'
 
-
 ## User Guide
-
 
 ### Login and Logout
 
-The Api class is used to login and logout from the IOTile Cloud
+The Api class is used to login and logout from the ArchFX Cloud
 
 Example:
 
-```
+```python
 from archfx_cloud.api.connection import Api
 
 c = Api('https://arch.arhfx.io')
@@ -100,7 +97,7 @@ if ok:
 
 If you have a JWT token, you can skip the login and just set the token:
 
-```
+```python
 from archfx_cloud.api.connection import Api
 
 c = Api('https://arch.arhfx.io')
@@ -110,7 +107,7 @@ c.set_token('big-ugly-token')
 
 You can use the Api itself to login and get a token:
 
-```
+```python
 from archfx_cloud.api.connection import Api
 
 c = Api('https://arch.arhfx.io')
@@ -127,7 +124,7 @@ The `Api(domain)` can be used to access any of the APIs in https://arch.archfx.i
 
 The `Api(domain)` is generic and therefore will support any future resources supported by the ArchFX Cloud Rest API.
 
-```
+```python
 from archfx_cloud.api.connection import Api
 
 api = Api('https://arch.arhfx.io')
@@ -156,7 +153,7 @@ api.org(new["slug"]).delete()
 
 You can pass arguments to any get() using
 
-```
+```python
 # /api/v1/org/
 for org in api.org.get()['results']:
    # Pass any arguments as get(foo=1, bar='2'). e.g.
@@ -167,7 +164,7 @@ for org in api.org.get()['results']:
 
 You can also call nested resources/actions like this:
 
-```
+```python
 # /api/v1/machine/<slug>/devices/
 for org in api.machine.get()['results']:
    # /api/v1/machine/<slug>/devices
@@ -179,7 +176,7 @@ for org in api.machine.get()['results']:
 
 Example:
 
-```
+```python
 from archfx_cloud.api.connection import Api
 
 api = Api('https://arch.arhfx.io')
@@ -196,15 +193,15 @@ if ok:
 
 To easily handle ID slugs, use the `utils.gid` package:
 
-```
-parent = IOTileParentSlug(5, ptype='pl)
+```python
+parent = ArchFxParentSlug(5, ptype='pl)
 assert(str(parent) == 'pl--0000-0005')
 
-device = IOTileDeviceSlug(10)
+device = ArchFxDeviceSlug(10)
 assert(str(device) == 'd--0000-0000-0000-000a')
 
 
-id = IOTileStreamSlug()
+id = ArchFxStreamSlug()
 id.from_parts(parent=parent, device=device, variable='0000-5501)
 assert(str(id) == 'sl--0000-0005--0000-0000-0000-000a--0000-5001')
 
@@ -214,11 +211,11 @@ self.assertEqual(str(parts['device']), str(device))
 self.assertEqual(str(parts['variable']), '0000-5501')
 
 # Other forms of use
-device = IOTileDeviceSlug('000a)
+device = ArchFxDeviceSlug('000a)
 assert(str(device) == 'd--0000-0000-0000-000a')
-device = IOTileDeviceSlug(d--000a)
+device = ArchFxDeviceSlug(d--000a)
 assert(str(device) == 'd--0000-0000-0000-000a')
-device = IOTileDeviceSlug(0xa)
+device = ArchFxDeviceSlug(0xa)
 assert(str(device) == 'd--0000-0000-0000-000a')
 ```
 
@@ -226,7 +223,7 @@ assert(str(device) == 'd--0000-0000-0000-000a')
 
 As you can see from the examples above, every script is likely to follow the following format:
 
-```
+```python
 # Parse arguments from user and get password
 # Login to server
 # Do some real work
@@ -238,8 +235,7 @@ which basically configures the `logging` and `argsparse` python packages with a 
 construction. Then the `main()` method runs the following flow, where each function call can be overwritten in your
 own derived class
 
-
-```
+```python
    self.domain = self.get_domain()
    self.api = Api(self.domain)
    self.before_login()
@@ -252,7 +248,7 @@ own derived class
 
 An example of how to use this class is shown below:
 
-```
+```python
 class MyScript(BaseMain):
 
     def add_extra_args(self):
@@ -289,15 +285,15 @@ if __name__ == '__main__':
 
 archfx_cloud requires the following modules.
 
-    * Python 3.6+
-    * requests
-    * python-dateutil
-    
+- Python 3.6+
+- requests
+- python-dateutil
+
 ## Development
 
 To test, run `python setup.py test` or to run coverage analysis:
 
-```
+```bash
 coverage run --source=archfx_cloud setup.py test
 coverage report -m
 ```
