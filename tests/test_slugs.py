@@ -1,5 +1,5 @@
 import unittest2 as unittest
-import pytest
+import datetime
 
 from archfx_cloud.utils.slugs import (
     ArchFxParentSlug,
@@ -10,7 +10,7 @@ from archfx_cloud.utils.slugs import (
 )
 
 
-class GIDTestCase(unittest.TestCase):
+class SlugTestCase(unittest.TestCase):
 
     def test_parent_slug(self):
         id = ArchFxParentSlug(5)
@@ -121,124 +121,123 @@ class GIDTestCase(unittest.TestCase):
         self.assertEqual(var5.scope, 0xF)
 
     def test_stream_slug(self):
-        self.assertRaises(ValueError, ArchFxStreamSlug, 5)
-        self.assertRaises(ValueError, ArchFxStreamSlug, 's--0001')
+        slug1 = ArchFxStreamSlug('sl--0000-0001--0000-0000-0000-0002--5051')
+        parts = slug1.get_parts()
+        self.assertEqual(parts['parent'], 'pl--0000-0001')
+        self.assertEqual(parts['block'], '0000')
+        self.assertEqual(parts['scope'], '0000')
+        self.assertEqual(parts['device'], '0000-0002')
+        self.assertEqual(parts['start'], None)
 
-        id = ArchFxStreamSlug('sl--0000-0001--0000-0000-0000-0002--0000-0003')
-        self.assertEqual(str(id), 'sl--0000-0001--0000-0000-0000-0002--0000-0003')
+        slug2 = ArchFxStreamSlug()
+        slug2.from_parts(
+            parent='pa--0000-0001',
+            device='d--0000-0001-0000-0123',
+            variable='5051'
+        )
+        self.assertEqual(str(slug2), 'sa--0000-0001--0000-0001-0000-0123--0000-5051')
 
-        parts = id.get_parts()
-        self.assertEqual(str(parts['parent']), 'pl--0000-0001')
-        self.assertEqual(str(parts['device']), '0000-0002')
-        self.assertEqual(str(parts['variable']), '0000-0003')
+        slug3 = ArchFxStreamSlug()
+        slug3.from_parts(
+            parent=None,
+            device='d--0000-0001-0000-0123',
+            variable='0001-5051'
+        )
+        self.assertEqual(str(slug3), 'sd--0000-0000--0000-0001-0000-0123--0001-5051')
 
-        id = ArchFxStreamSlug('sl--0000-0000--0000-0000-0000-0002--0000-0003')
-        self.assertEqual(str(id), 'sl--0000-0000--0000-0000-0000-0002--0000-0003')
+        slug4 = ArchFxStreamSlug()
+        slug4.from_parts(
+            parent='pa--0000-0001',
+            device='d--0000-0001-0000-0123',
+            variable=0x5051
+        )
+        self.assertEqual(str(slug4), 'sa--0000-0001--0000-0001-0000-0123--0000-5051')
 
-        id = ArchFxStreamSlug('sl----0000-0000-0000-0002--0000-0003')
-        self.assertEqual(str(id), 'sl--0000-0000--0000-0000-0000-0002--0000-0003')
+        slug5 = ArchFxStreamSlug()
+        slug5.from_parts(
+            parent=ArchFxParentSlug('ps--0000-0001'),
+            device=ArchFxDeviceSlug('d--0000-0001-0000-0123'),
+            variable=ArchFxVariableID(0x5051)
+        )
+        self.assertEqual(str(slug5), 'ss--0000-0001--0000-0001-0000-0123--0000-5051')
 
-        parts = id.get_parts()
-        self.assertEqual(str(parts['parent']), 'pl--0000-0000')
-        self.assertEqual(str(parts['block']), '0000')
-        self.assertEqual(str(parts['scope']), '0000')
-        self.assertEqual(str(parts['device']), '0000-0002')
-        self.assertEqual(str(parts['variable']), '0000-0003')
+        slug6 = ArchFxStreamSlug()
+        slug6.from_parts(
+            parent=ArchFxParentSlug('pa--0000-0001'),
+            device=ArchFxDeviceSlug('d--0000-0001-0000-0123'),
+            variable=ArchFxVariableID(0x10000 | 0x5051)
+        )
+        self.assertEqual(str(slug6), 'sa--0000-0001--0000-0001-0000-0123--0001-5051')
 
+        slug7 = ArchFxStreamSlug('sa--0000-0001--0000-0001-0000-0123--0001-5051')
+        parts = slug7.get_parts()
+        self.assertEqual(parts['block'], '0000')
+        self.assertEqual(parts['scope'], '0001')
+        self.assertEqual(parts['device'], '0000-0123')
+        self.assertEqual(parts['variable'], '0001-5051')
+        self.assertEqual(parts['parent'], 'pa--0000-0001')
+        self.assertEqual(parts['start'], None)
 
-    def test_stream_from_parts(self):
-        parent = ArchFxParentSlug(5)
-        device = ArchFxDeviceSlug(10)
-        variable = ArchFxVariableID('0000-5001')
+        slug8 = ArchFxStreamSlug('sl--0000-0001--0000-0001-0000-0123--0001-5051')
+        parts = slug8.get_parts()
+        self.assertEqual(parts['block'], '0000')
+        self.assertEqual(parts['scope'], '0001')
+        self.assertEqual(parts['device'], '0000-0123')
+        self.assertEqual(parts['variable'], '0001-5051')
+        self.assertEqual(parts['parent'], 'pl--0000-0001')
+        self.assertEqual(parts['start'], None)
 
-        id = ArchFxStreamSlug()
-        id.from_parts(parent=parent, device=device, variable=variable)
-        self.assertEqual(str(id), 'sl--0000-0005--0000-0000-0000-000a--0000-5001')
-        self.assertEqual(id.formatted_id(), '0000-0005--0000-0000-0000-000a--0000-5001')
+        slug9 = ArchFxStreamSlug('ss--0000-0001--0000-0001-0000-0123--0001-5051')
+        parts = slug9.get_parts()
+        self.assertEqual(parts['block'], '0000')
+        self.assertEqual(parts['scope'], '0001')
+        self.assertEqual(parts['device'], '0000-0123')
+        self.assertEqual(parts['variable'], '0001-5051')
+        self.assertEqual(parts['parent'], 'ps--0000-0001')
+        self.assertEqual(parts['start'], None)
 
-        parts = id.get_parts()
-        self.assertEqual(str(parts['parent']), str(parent))
-        self.assertEqual(str(parts['device']), '0000-000a')
-        self.assertEqual(str(parts['variable']), str(variable))
+        slug10 = ArchFxStreamSlug('sa--0001--0000-0123--5051')
+        parts = slug10.get_parts()
+        self.assertEqual(parts['block'], '0000')
+        self.assertEqual(parts['scope'], '0000')
+        self.assertEqual(parts['device'], '0000-0123')
+        self.assertEqual(parts['variable'], '0000-5051')
+        self.assertEqual(parts['parent'], 'pa--0000-0001')
+        self.assertEqual(parts['start'], None)
 
-        id = ArchFxStreamSlug()
-        pslug = 'pl--0000-0006'
-        dslug = 'd--0000-0000-0000-0100'
-        vid = '0000-5002'
-        id.from_parts(parent=pslug, device=dslug, variable=vid)
-        self.assertEqual(str(id), 'sl--0000-0006--0000-0000-0000-0100--0000-5002')
+        slug11 = ArchFxStreamSlug('sl--0000-0001--0000-0001-0000-0123--0001-5051--1612829726628904')
+        parts = slug11.get_parts()
+        self.assertEqual(parts['block'], '0000')
+        self.assertEqual(parts['scope'], '0001')
+        self.assertEqual(parts['device'], '0000-0123')
+        self.assertEqual(parts['variable'], '0001-5051')
+        self.assertEqual(parts['parent'], 'pl--0000-0001')
+        self.assertEqual(parts['start'], '1612829726628904')
 
-        parts = id.get_parts()
-        self.assertEqual(str(parts['parent']), pslug)
-        self.assertEqual(str(parts['device']), '0000-0100')
-        self.assertEqual(str(parts['variable']), vid)
+        slug12 = ArchFxStreamSlug()
+        slug12.from_parts(
+            parent='pa--0000-0001',
+            device='d--0000-0001-0000-0123',
+            variable='5051',
+            start='1612829726628904'
+        )
+        self.assertEqual(str(slug12), 'sa--0000-0001--0000-0001-0000-0123--0000-5051--1612829726628904')
 
-        id = ArchFxStreamSlug()
-        vid = '0000-5002'
-        id.from_parts(parent=7, device=1, variable=vid)
-        self.assertEqual(str(id), 'sl--0000-0007--0000-0000-0000-0001--0000-5002')
+        slug13 = ArchFxStreamSlug()
+        with self.assertRaises(ValueError):
+            slug13.from_parts(
+                parent='pa--0000-0001',
+                device='d--0000-0001-0000-0123',
+                variable='5051',
+                start='16128297266289040'  # 17 digits is too many
+            )
 
-        id = ArchFxStreamSlug()
-        id.from_parts(parent=7, device=1, variable='5002')
-        self.assertEqual(str(id), 'sl--0000-0007--0000-0000-0000-0001--0000-5002')
-
-        # Project is the only one that can be zero (wildcard)
-        id = ArchFxStreamSlug()
-        id.from_parts(parent=0, device=1, variable='5002')
-        self.assertEqual(str(id), 'sl--0000-0000--0000-0000-0000-0001--0000-5002')
-        id.from_parts(parent=None, device=1, variable='5002')
-        # self.assertEqual(str(id), 'sl--0000-0000--0000-0000-0000-0001--0000-5002')
-
-        id = ArchFxStreamSlug()
-        id.from_parts(parent='', device=1, variable='5002')
-        # self.assertEqual(str(id), 'sl--0000-0000--0000-0000-0000-0001--0000-5002')
-        id.from_parts(parent=None, device=1, variable='5002')
-        # self.assertEqual(str(id), 'sl--0000-0000--0000-0000-0000-0001--0000-5002')
-
-        id = ArchFxStreamSlug()
-        with pytest.raises(ValueError):
-            id.from_parts(parent=-1, device=1, variable='5002')
-        with pytest.raises(ValueError):
-            id.from_parts(parent=1, device=-1, variable='5002')
-        with pytest.raises(ValueError):
-            id.from_parts(parent=1, device=1, variable=-1)
-
-        # Virtual Streams
-        id = ArchFxStreamSlug()
-        id.from_parts(parent=5, device=0, variable='5001')
-        self.assertEqual(str(id), 'sl--0000-0005--0000-0000-0000-0000--0000-5001')
-        self.assertEqual(id.formatted_id(), '0000-0005--0000-0000-0000-0000--0000-5001')
-        id.from_parts(parent=5, device=None, variable='5001')
-        self.assertEqual(str(id), 'sl--0000-0005--0000-0000-0000-0000--0000-5001')
-        self.assertEqual(id.formatted_id(), '0000-0005--0000-0000-0000-0000--0000-5001')
-
-    def test_id_property(self):
-        parent = ArchFxParentSlug(5)
-        self.assertEqual(parent.get_id(), 5)
-        device = ArchFxDeviceSlug(10)
-        self.assertEqual(device.get_id(), 10)
-        variable = ArchFxVariableID('5001')
-
-        id = ArchFxStreamSlug()
-        id.from_parts(parent=parent, device=device, variable=variable)
-        self.assertRaises(ValueError, id.get_id)
-
-    def test_streamer_gid(self):
-        """Ensure that ArchFxStreamerSlug works."""
-
-        s_gid = ArchFxStreamerSlug(1, 2)
-        assert str(s_gid) == "t--0000-0000-0000-0001--0002"
-        assert s_gid.get_device() == "d--0000-0000-0000-0001"
-        assert s_gid.get_index() == "0002"
-
-        s_gid = ArchFxStreamerSlug("d--0000-0000-0000-1234", 1)
-        assert str(s_gid) == "t--0000-0000-0000-1234--0001"
-
-        with pytest.raises(ValueError):
-            ArchFxStreamerSlug([], 1)
-
-        d_gid = ArchFxDeviceSlug(15)
-        s_gid = ArchFxStreamerSlug(d_gid, 0)
-        assert str(s_gid) == "t--0000-0000-0000-000f--0000"
-        assert s_gid.get_device() == str(d_gid)
-        assert s_gid.get_index() == "0000"
+        now = datetime.datetime.now()
+        slug14 = ArchFxStreamSlug()
+        slug14.from_parts(
+            parent='pa--0000-0001',
+            device='d--0000-0001-0000-0133',
+            variable='5051',
+            start=now
+        )
+        self.assertEqual(str(slug14), f'sa--0000-0001--0000-0001-0000-0133--0000-5051--{int(now.timestamp() * 10**6)}')

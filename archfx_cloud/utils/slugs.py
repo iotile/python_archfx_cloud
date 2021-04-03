@@ -170,7 +170,6 @@ class ArchFxVariableID(ArchFxCloudSlug):
             id_ = '-'.join([scope, var])
 
         if isinstance(id_, int):
-            print(id_)
             if id_ < 0 or id_ >= pow(16, 8):
                 raise ValueError('ArchFxVariableID: ID should be greater or equal than zero and less than 16^8')
             vid = int2vid(id_)
