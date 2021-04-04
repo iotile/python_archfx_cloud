@@ -213,7 +213,7 @@ self.assertEqual(str(parts['variable']), '0000-5501')
 # Other forms of use
 device = ArchFxDeviceSlug('000a)
 assert(str(device) == 'd--0000-0000-0000-000a')
-device = ArchFxDeviceSlug(d--000a)
+device = ArchFxDeviceSlug('d--000a')
 assert(str(device) == 'd--0000-0000-0000-000a')
 device = ArchFxDeviceSlug(0xa)
 assert(str(device) == 'd--0000-0000-0000-000a')
@@ -310,8 +310,7 @@ To deploy to pypi:
 
 ```bash
 python setup.py test
-python setup.py sdist bdist_wheel
-twine check dist/*
+python -m build --sdist --wheel --outdir dist/ .
 twine upload dist/*
 ```
 
