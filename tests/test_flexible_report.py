@@ -99,16 +99,22 @@ class FlexibleReportTests(unittest.TestCase):
             stream=0x15030,
             value=3.0,
             summary_data={'foo': 6, 'bar': 'foobar'},
-            raw_data=None,
             reading_id=1001
+        )
+        events.append(reading)
+        reading = ArchFXDataPoint(
+            timestamp=dateutil.parser.parse('2021-01-20T00:00:00.200000+00:00'),
+            stream='5051',
+            value=1.0,
+            reading_id=1002
         )
         events.append(reading)
 
         sent_time = dateutil.parser.parse('2021-01-20T00:00:00.300000Z')
         report = FlexibleDictionaryReport.FromReadings(
-            uuid=0x1234,
+            device='d--1234',
             data=events,
-            report_id=1002,
+            report_id=1003,
             streamer=0xff,
             sent_timestamp=sent_time
         )
@@ -117,21 +123,27 @@ class FlexibleReportTests(unittest.TestCase):
         assert decoded.get('device') == 0x1234
         assert decoded.get('streamer_index') == 0xff
         assert decoded.get('streamer_selector') == 0xffff
-        assert decoded.get('seqid') == 1002
+        assert decoded.get('seqid') == 1003
         assert decoded.get('lowest_id') == 1000
-        assert decoded.get('highest_id') == 1001
+        assert decoded.get('highest_id') == 1002
         assert decoded.get('sent_timestamp') == '2021-01-20T00:00:00.300000+00:00'
         report_data = decoded.get('events')
-        assert len(report_data) == 2
+        assert len(report_data) == 3
         assert report_data[0].get('timestamp') == '2021-01-20T00:00:00.100000+00:00'
         assert report_data[1].get('timestamp') == '2021-01-20T00:00:00.200000+00:00'
+        assert report_data[2].get('timestamp') == '2021-01-20T00:00:00.200000+00:00'
         assert report_data[0].get('stream') == 0x15030
         assert report_data[1].get('stream') == 0x15030
+        assert report_data[2].get('stream') == 0x5051
         assert report_data[0].get('dev_seqid') == 1000
         assert report_data[1].get('dev_seqid') == 1001
+        assert report_data[2].get('dev_seqid') == 1002
         assert report_data[0].get('value') == 2.0
         assert report_data[1].get('value') == 3.0
+        assert report_data[2].get('value') == 1.0
         assert report_data[0].get('data') is None
         assert report_data[1].get('data') is None
+        assert report_data[2].get('data') is None
         assert report_data[0].get('extra_data') == {'foo': 5, 'bar': 'foobar'}
         assert report_data[1].get('extra_data') == {'foo': 6, 'bar': 'foobar'}
+        assert report_data[2].get('extra_data') == {}

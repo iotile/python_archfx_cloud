@@ -1,9 +1,10 @@
 """A flexible dictionary based report format suitable for msgpack and json serialization."""
 
 import datetime
-from typing import List
+from typing import List, Union
 import pytz
 import msgpack
+from ..utils.slugs import ArchFxDeviceSlug
 from .exceptions import DataError
 from .report import ArchFXDataPoint, ArchFXReport
 
@@ -25,7 +26,7 @@ class FlexibleDictionaryReport(ArchFXReport):
 
     @classmethod
     def FromReadings(cls,
-                     uuid: int,
+                     device: Union[str, int],
                      data: List[ArchFXDataPoint],
                      report_id: int = ArchFXDataPoint.InvalidReadingID,
                      selector: int = 0xFFFF,
@@ -34,7 +35,7 @@ class FlexibleDictionaryReport(ArchFXReport):
                      received_time: datetime.datetime = None):
         """Create a flexible dictionary report from a list of readings and events.
         Args:
-            uuid: The uuid of the device that this report came from
+            device: The uuid or slug of the device that this report came from
             events: A list of the events contained in the report.
             report_id: The id of the report.  If not provided it defaults to IOTileReading.InvalidReadingID.
                 Note that you can specify anything you want for the report id but for actual IOTile devices
@@ -66,7 +67,7 @@ class FlexibleDictionaryReport(ArchFXReport):
 
         report_dict = {
             "format": cls.FORMAT_TAG,
-            "device": uuid,
+            "device": ArchFxDeviceSlug(device).get_id(),
             "streamer_index": streamer,
             "streamer_selector": selector,
             "seqid": report_id,

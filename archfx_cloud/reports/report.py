@@ -36,7 +36,7 @@ class ArchFXDataPoint:
                  timestamp: datetime.datetime,
                  stream: Union[str, int],
                  value: float,
-                 summary_data: Dict,
+                 summary_data: Optional[Dict] = None,
                  raw_data: Optional[Dict] = None,
                  reading_id: int = None):
 
@@ -51,6 +51,8 @@ class ArchFXDataPoint:
         self.timestamp = timestamp
 
         self.value = float(value)
+        if summary_data is None:
+            summary_data = {}
         self.summary_data = summary_data
         self.raw_data = raw_data
 
