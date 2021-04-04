@@ -281,11 +281,69 @@ if __name__ == '__main__':
     work.main()
 ```
 
+### Uploading Machine data to ArchFX Cloud
+
+The `ArchFXDataPoint` and `ArchFXFlexibleDictionaryReport` helper classes can be used to generate a Streamer Report
+compatible with ArchFX Cloud. A Streamer Report can be used to send several stream data records together.
+Using Streamer Reports have several benefits over uploading data manually using the Rest API. Apart from the efficiency
+of uploading multiple data points together, the streamer report ensures that data is not processed multiple times.
+Each record has a sequential ID which ensures that the cloud will never process data that has already been processed,
+allowing Streamer Reports to be uploaded multiple times without worrying about duplication.
+
+The Streamer Report uses [msgpack](https://msgpack.org) as format, which is a compressed JSON file.
+
+Next is a simple example for using these classes:
+
+```python
+from datetime import datetime
+from io import BytesIO
+from dateutil import parser
+from archfx_cloud.api.connection import Api
+from archfx_cloud.reports.report import ArchFXDataPoint
+from archfx_cloud.reports.flexible_dictionary import ArchFXFlexibleDictionaryReport
+
+# Create Data Points
+reading = ArchFXDataPoint(
+    timestamp=parser.parse('2021-01-20T00:00:00.100000Z'),
+    stream='0001-5090',
+    value=2.0,
+    summary_data={'foo': 5, 'bar': 'foobar'},
+    raw_data=None,
+    reading_id=1000
+)
+events.append(reading)
+reading = ArchFXDataPoint(
+    timestamp=parser.parse('2021-01-20T00:00:00.200000+00:00'),
+    stream='0001-5090',
+    value=3.0,
+    summary_data={'foo': 6, 'bar': 'foobar'},
+    reading_id=1001
+)
+events.append(reading)
+
+# Create Report
+sent_time = datetime.datetime.utcnow()
+report = ArchFXFlexibleDictionaryReport.FromReadings(
+    device='d--1234',
+    data=events,
+    report_id=1003,
+    streamer=0xff,
+    sent_timestamp=sent_time
+)
+
+# Load Report to the Cloud
+api = Api('https://arch.arhfx.io')
+ok = api.login(email=args.email, password=password)
+if ok:
+    fp = {'file': ("report" + file_ext, BytesIO(report.encode()))}
+    resp = api.streamer().report.upload_fp(fp=fp, timestamp=sent_time.isoformat())
+```
+
 ## Requirements
 
 archfx_cloud requires the following modules.
 
-- Python 3.6+
+- Python 3.7+
 - requests
 - python-dateutil
 
