@@ -1,8 +1,10 @@
 """Base class for data streamed from an IOTile device"""
 
 import datetime
+from typing import Union, Dict, Optional
 import dateutil.parser
 from typedargs.exceptions import NotFoundError
+from ..utils.slugs import ArchFxVariableID
 
 
 class ArchFXDataPoint:
@@ -15,14 +17,14 @@ class ArchFXDataPoint:
     representation.  It may be useful to know that separation so that we can
     store the large data somewhere different from where we store the summary.
     Args:
-        timestamp (datetime): A UTC time when this data was acquired.
-        reading_id (int): An optional unique identifier for this reading that allows
+        timestamp: A UTC time when this data was acquired.
+        reading_id: An optional unique identifier for this reading that allows
             deduplication.  If no reading id is passed, InvalidReadingID is used.
-        stream (int): The stream that this reading is part of
-        value (float): The primary reading value
-        summary_data (dict): A dictionary of any summary data this event has.  You
+        stream: The stream that this reading is part of
+        value: The primary reading value
+        summary_data: A dictionary of any summary data this event has.  You
             may pass None if there is no summary data.
-        raw_data (dict): A dictionary (possibly very large) of all data associated
+        raw_data: A dictionary (possibly very large) of all data associated
             with this event.  You may pass None if all data is contained in the
             summary_data member.
     """
@@ -30,8 +32,16 @@ class ArchFXDataPoint:
     InvalidRawTime = 0xFFFFFFFF
     InvalidReadingID = 0
 
-    def __init__(self, timestamp, stream, value, summary_data, raw_data, reading_id=None):
-        self.stream = stream
+    def __init__(self,
+                 timestamp: datetime.datetime,
+                 stream: Union[str, int],
+                 value: float,
+                 summary_data: Dict,
+                 raw_data: Optional[Dict] = None,
+                 reading_id: int = None):
+
+        # Always store stream as variable ID
+        self.stream = ArchFxVariableID(stream).get_id()
 
         if reading_id is None:
             reading_id = ArchFXDataPoint.InvalidReadingID
@@ -104,14 +114,18 @@ class ArchFXReport:
         function that should turn the report into a serialized bytearray that could be
         decoded with decode().
     Args:
-        rawreport (bytearray): The raw data of this report
-        signed (bool): Whether this report is signed to specify who it is from
-        encrypted (bool): Whether this report is encrypted
-        received_time (datetime): The time in UTC when this report was received from a device.
+        rawreport: The raw data of this report
+        signed: Whether this report is signed to specify who it is from
+        encrypted: Whether this report is encrypted
+        received_time: The time in UTC when this report was received from a device.
             If not received, the time is assumed to be utcnow().
     """
 
-    def __init__(self, rawreport, signed, encrypted, received_time=None):
+    def __init__(self,
+                 rawreport: bytearray,
+                 signed: bool,
+                 encrypted: bool,
+                 received_time: datetime.datetime = None):
         self.visible_data = []
 
         self.origin = None
@@ -141,10 +155,10 @@ class ArchFXReport:
 
         return self.raw_report
 
-    def save(self, path):
+    def save(self, path: str):
         """Save a binary copy of this report
         Args:
-            path (string): The path where we should save the binary copy of the report
+            path: The path where we should save the binary copy of the report
         """
 
         data = self.encode()
@@ -178,5 +192,5 @@ class ArchFXReport:
             enc = "encrypted"
         else:
             enc = "not encrypted"
-        return "ArchFX Report (length: %d, visible events: %d, %s and %s)" \
-               % (len(self.raw_report), len(self.visible_data), verified, enc)
+        return "ArchFX Report (length: {}, visible data: {}, {} and {})".format(
+            len(self.raw_report), len(self.visible_data), verified, enc)
