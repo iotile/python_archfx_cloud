@@ -25,7 +25,9 @@ setup(name='archfx_cloud',
     python_requires=">=3.7,<4",
     install_requires=[
         'requests>=2.21.0',
-        'python-dateutil'
+        'python-dateutil',
+        'msgpack>=1.0.2,<1.1',
+        'typedargs>=1.0.0,<2',
     ],
     keywords=["iotile", "archfx", "arch", "iiot", "automation"],
     classifiers=[
