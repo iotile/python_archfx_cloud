@@ -4,7 +4,7 @@ All major changes in each released version of the archfx-cloud plugin are listed
 
 ## 0.10.0
 
-- Add FlexibleDictionaryReport to generate streamer reports compatible with ArchFX Cloud
+- Add ArchFXFlexibleDictionaryReport to generate streamer reports compatible with ArchFX Cloud
 
 ## 0.9.1
 

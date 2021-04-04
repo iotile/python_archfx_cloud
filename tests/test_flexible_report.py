@@ -2,7 +2,7 @@ import unittest2 as unittest
 import msgpack
 from datetime import datetime
 import dateutil.parser
-from archfx_cloud.reports.flexible_dictionary import FlexibleDictionaryReport
+from archfx_cloud.reports.flexible_dictionary import ArchFXFlexibleDictionaryReport
 from archfx_cloud.reports.report import ArchFXDataPoint
 
 
@@ -53,7 +53,7 @@ class FlexibleReportTests(unittest.TestCase):
 
         encoded = msgpack.packb(data, use_bin_type=True)
         decoded = msgpack.unpackb(encoded, raw=False)
-        report = FlexibleDictionaryReport(encoded, False, False)
+        report = ArchFXFlexibleDictionaryReport(encoded, False, False)
 
         assert len(report.visible_data) == 2
 
@@ -111,7 +111,7 @@ class FlexibleReportTests(unittest.TestCase):
         events.append(reading)
 
         sent_time = dateutil.parser.parse('2021-01-20T00:00:00.300000Z')
-        report = FlexibleDictionaryReport.FromReadings(
+        report = ArchFXFlexibleDictionaryReport.FromReadings(
             device='d--1234',
             data=events,
             report_id=1003,

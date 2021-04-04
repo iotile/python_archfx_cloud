@@ -9,7 +9,7 @@ from .exceptions import DataError
 from .report import ArchFXDataPoint, ArchFXReport
 
 
-class FlexibleDictionaryReport(ArchFXReport):
+class ArchFXFlexibleDictionaryReport(ArchFXReport):
     """A list of events and readings encoded as a dictionary.
     This report format is designed to be suitable for storing in any
     format that supports key/value objects like json, msgpack, yaml,
@@ -48,7 +48,7 @@ class FlexibleDictionaryReport(ArchFXReport):
             received_time: The UTC time when this report was received from an IOTile device.  If it is being
                 created now, received_time defaults to datetime.utcnow().
         Returns:
-            FlexibleDictionaryReport: A report containing the data passed in.
+            ArchFXFlexibleDictionaryReport: A report containing the data passed in.
         """
 
         lowest_id = ArchFXDataPoint.InvalidReadingID
@@ -78,7 +78,7 @@ class FlexibleDictionaryReport(ArchFXReport):
         }
 
         encoded = msgpack.packb(report_dict, default=_encode_datetime, use_bin_type=True)
-        return FlexibleDictionaryReport(encoded, signed=False, encrypted=False, received_time=received_time)
+        return ArchFXFlexibleDictionaryReport(encoded, signed=False, encrypted=False, received_time=received_time)
 
     def decode(self):
         """Decode this report from a msgpack encoded binary blob."""
@@ -88,7 +88,7 @@ class FlexibleDictionaryReport(ArchFXReport):
         data = [ArchFXDataPoint.FromDict(x) for x in report_dict.get('events', [])]
 
         if 'device' not in report_dict:
-            raise DataError("Invalid encoded FlexibleDictionaryReport that did not "
+            raise DataError("Invalid encoded ArchFXFlexibleDictionaryReport that did not "
                             "have a device key set with the device uuid")
 
         self.origin = report_dict['device']
@@ -108,7 +108,7 @@ class FlexibleDictionaryReport(ArchFXReport):
     def serialize(self):
         """Serialize this report including the received time."""
 
-        raise NotImplementedError("This report format (FlexibleDictionaryReport) does not support serialization")
+        raise NotImplementedError("This report format (ArchFXFlexibleDictionaryReport) does not support serialization")
 
 
 def _encode_datetime(obj):
