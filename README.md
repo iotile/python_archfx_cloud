@@ -303,20 +303,27 @@ coverage report -m
 To deploy to pypi:
 
 1. Update `version.py` with new version number
-1. Update `CHANGELOG.md` with description of new release
+1. Update `RELEASE.md` with description of new release
 1. Run `python setup.py test` to ensure everything is ok
 1. Commit all changes to master (PR is needed)
 1. Once everythin commited, create a new version Tag. Deployment is triggered from that:
 
 ```bash
-python setup.py test
-python -m build --sdist --wheel --outdir dist/ .
-twine upload dist/*
-```
-
-or with CD:
-
-```bash
 git tag -a v0.9.13 -m "v0.9.13"
 git push origin v0.9.13
+```
+
+### Manual Release
+
+All deployments should be done using the Ci/CD process (github actions)
+but just for copleteness, this is how a manual deployments is done
+
+```bash
+# Test
+python setup.py test
+# Build
+python setup.py sdist bdist_wheel
+twine check dist/*
+# Publish
+twine upload dist/*
 ```
