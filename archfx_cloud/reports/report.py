@@ -5,6 +5,7 @@ from typing import Union, Dict, Optional
 import dateutil.parser
 from typedargs.exceptions import NotFoundError
 from ..utils.slugs import ArchFxVariableID
+from .exceptions import DataError
 
 
 class ArchFXDataPoint:
@@ -53,6 +54,9 @@ class ArchFXDataPoint:
         self.value = float(value)
         if summary_data is None:
             summary_data = {}
+        elif 'value' in summary_data:
+            # We used to add 'value' as part of summary_data so checking we don't
+            raise DataError('value is not a valid field for summary_data')
         self.summary_data = summary_data
         self.raw_data = raw_data
 
@@ -183,6 +187,10 @@ class ArchFXReport:
         info['origin'] = self.origin
 
         return info
+
+    def write(self, file_path: str):
+        """Write Streamer Report to disk"""
+        raise NotFoundError("ArchFXReport decode needs to be overriden")
 
     def __str__(self):
         if self.verified:

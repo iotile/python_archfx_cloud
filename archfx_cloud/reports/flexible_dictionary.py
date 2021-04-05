@@ -110,6 +110,11 @@ class ArchFXFlexibleDictionaryReport(ArchFXReport):
 
         raise NotImplementedError("This report format (ArchFXFlexibleDictionaryReport) does not support serialization")
 
+    def write(self, file_path: str):
+        """Write Streamer Report to disk as a msgpack file"""
+        with open(file_path, "wb") as outfile:
+            outfile.write(self.encode())
+
 
 def _encode_datetime(obj):
     """Pack a datetime into an isoformat string."""

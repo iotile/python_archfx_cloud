@@ -318,7 +318,7 @@ report = ArchFXFlexibleDictionaryReport.FromReadings(
 api = Api('https://arch.arhfx.io')
 ok = api.login(email=args.email, password=password)
 if ok:
-    fp = {'file': ("report" + file_ext, BytesIO(report.encode()))}
+    fp = {'file': ("report.mp", BytesIO(report.encode()))}
     resp = api.streamer().report.upload_fp(fp=fp, timestamp=sent_time.isoformat())
 ```
 
