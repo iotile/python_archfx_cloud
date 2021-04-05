@@ -172,23 +172,6 @@ for org in api.machine.get()['results']:
 
 ```
 
-### Uploading a Streamer Report
-
-Example:
-
-```python
-from archfx_cloud.api.connection import Api
-
-api = Api('https://arch.arhfx.io')
-
-ok = api.login(email=args.email, password=password)
-if ok:
-    
-    ts = '{}'.format(datetime.datetime.utcnow().isoformat())
-    with open('file.bin', 'rb') as fp:
-        resp = api.streamer().report.upload_fp(fp=fp, timestamp=ts)
-```
-
 ### Globaly unique ID slugs
 
 To easily handle ID slugs, use the `utils.gid` package:
@@ -281,7 +264,7 @@ if __name__ == '__main__':
     work.main()
 ```
 
-### Uploading Machine data to ArchFX Cloud
+### Uploading a Streamer Report
 
 The `ArchFXDataPoint` and `ArchFXFlexibleDictionaryReport` helper classes can be used to generate a Streamer Report
 compatible with ArchFX Cloud. A Streamer Report can be used to send several stream data records together.
