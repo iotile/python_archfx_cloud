@@ -26,7 +26,7 @@ DEFAULT_TOKEN_TYPE = 'jwt'
 logger = logging.getLogger(__name__)
 
 
-class RestResource(object):
+class RestResource:
     """
     Resource provides the main functionality behind a Django Rest Framework based API. It handles the
     attribute -> url, kwarg -> query param, and other related behind the scenes
