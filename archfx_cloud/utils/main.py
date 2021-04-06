@@ -33,11 +33,11 @@ class BaseMain(object):
             '-u', '--user', dest='email', type=str, help='Email used for login'
         )
         self.parser.add_argument(
-            '--server', dest='server_type', type=str, default='dev',
+            '--server', dest='server_type', type=str, default='prod',
             help='Server Type: prod/stage/dev'
         )
         self.parser.add_argument(
-            '--customer', dest='customer', type=str, default='stage',
+            '--customer', dest='customer', type=str, default='arch',
             help='Customer slug: arch, stage, acme'
         )
 
