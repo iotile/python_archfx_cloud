@@ -19,9 +19,7 @@ setup(name='archfx_cloud',
     author_email="info@archsys.io",
     license='MIT',
     packages=find_packages(exclude=("tests",)),
-    entry_points={
-        'pytest11': ['mock_cloud = archfx_cloud.utils.mock_cloud']
-    },
+    entry_points={},
     python_requires=">=3.7,<4",
     install_requires=[
         'requests>=2.21.0',
