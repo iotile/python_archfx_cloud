@@ -10,6 +10,7 @@ When it comes to using Python packages, it is always recommened you use a Python
 
 ```bash
 python3 -m venv  ~/.virtualenv/archfx-cloud
+source ~/.virtualenv/archfx-cloud
 ```
 
 or follow one of the many tutorials to setup Python virtual environments.
