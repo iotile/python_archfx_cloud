@@ -10,7 +10,7 @@ When it comes to using Python packages, it is always recommened you use a Python
 
 ```bash
 python3 -m venv  ~/.virtualenv/archfx-cloud
-source ~/.virtualenv/archfx-cloud
+source ~/.virtualenv/archfx-cloud/bin/activate
 ```
 
 or follow one of the many tutorials to setup Python virtual environments.
@@ -159,7 +159,7 @@ You can pass arguments to any get() using
 for org in api.org.get()['results']:
    # Pass any arguments as get(foo=1, bar='2'). e.g.
    # /api/v1/site/?org__slug=<slug>
-   org_projects = c.site.get(org='{0}'.format(org['slug']))
+   org_sites = c.site.get(org='{0}'.format(org['slug']))
 
 ```
 
