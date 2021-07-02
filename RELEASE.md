@@ -2,6 +2,10 @@
 
 All major changes in each released version of the archfx-cloud plugin are listed here.
 
+## 0.10.3
+
+- Fix bug where slug expansion produces malformed slugs
+
 ## 0.10.2
 
 - Remove mock_cloud until a proper ArchFX Cloud Mock is created

@@ -14,6 +14,7 @@ from .convert import (
     gid2int,
 )
 
+
 def slugify(value: str, allow_unicode: bool = False) -> str:
     """
     Convert to ASCII if 'allow_unicode' is False. Convert spaces to hyphens.
@@ -57,7 +58,7 @@ class ArchFxCloudSlug(object):
         parts = gid_split(self._slug)
         if len(parts) != 2:
             raise ValueError('Cannot call get_id() for IDs with more than one term')
-        if parts[0] not in ['ps', 'pa', 'pl', 'd',]:
+        if parts[0] not in ['ps', 'pa', 'pl', 'd', ]:
             raise ValueError('Only Devices/DataBlocks/Fleets have single IDs')
         return gid2int(parts[1])
 
@@ -113,13 +114,7 @@ class ArchFxDeviceSlug(ArchFxCloudSlug):
             self._slug = id._slug
             return
 
-        if isinstance(id, int):
-            if id < 0 or id >= pow(16, hex_count):
-                raise ValueError('ArchFxDeviceSlug: UUID should be greater or equal than zero and less than 16^12')
-            did = int2did(id)
-        else:
-            if not isinstance(id, str):
-                raise ValueError('ArchFxDeviceSlug: must be an int or str')
+        if isinstance(id, str):
             parts = gid_split(id)
             if len(parts) == 1:
                 did = parts[0]
@@ -128,12 +123,15 @@ class ArchFxDeviceSlug(ArchFxCloudSlug):
                     raise ValueError('ArchFxDeviceSlug: must start with a "d" or "m"')
                 did = gid_join(parts[1:])
 
-            # Convert to int and back to get rid of anything above 48 bits
-            id = gid2int(did)
-            if id < 0 or id >= pow(16, hex_count):
-                raise ValueError('ArchFxDeviceSlug: UUID should be greater or equal than zero and less than 16^12')
+            id = gid2int(did)  # Canonicalize to int
 
-        self.set_from_single_id_slug('d', 4, did)
+        if not isinstance(id, int):
+            raise ValueError(f"ArchFxDeviceSlug: not convertible from {type(id)}")
+
+        if id < 0 or id >= pow(16, hex_count):
+            raise ValueError('ArchFxDeviceSlug: UUID should be greater or equal than zero and less than 16^12')
+
+        self.set_from_single_id_slug('d', 4, int2did(id))
 
 
 class ArchFxVariableID(ArchFxCloudSlug):
@@ -167,28 +165,24 @@ class ArchFxVariableID(ArchFxCloudSlug):
                     raise ValueError('ArchFxVariableID: Var should be greater or equal than zero and less than 16^4')
                 var = int16gid(var)
 
-            id_ = '-'.join([scope, var])
+            id_ = f"{scope}-{var}"
 
-        if isinstance(id_, int):
-            if id_ < 0 or id_ >= pow(16, 8):
-                raise ValueError('ArchFxVariableID: ID should be greater or equal than zero and less than 16^8')
-            vid = int2vid(id_)
-        else:
-            if not isinstance(id_, str):
-                raise ValueError('ArchFxVariableID: must be an int or str: {}'.format(type(id_)))
+        if isinstance(id_, str):
             parts = gid_split(id_)
             if len(parts) == 1:
                 vid = parts[0]
             else:
                 raise ValueError('ArchFxVariableID: must start with a digit')
 
-            # Convert to int and back to get rid of anything above 32 bits
-            int_id = gid2int(vid)
-            if int_id < 0 or int_id >= pow(16, 8):
-                raise ValueError('ArchFxVariableID: ID should be greater or equal than zero and less than 16^8')
-            vid = int2vid(int_id)
+            id_ = gid2int(vid)  # Canonicalize to int
 
-        self.set_from_single_id_slug(None, None, vid)
+        if not isinstance(id_, int):
+            raise ValueError(f"ArchFxDeviceSlug: not convertible from {type(id_)}")
+
+        if id_ < 0 or id_ >= pow(16, 8):
+            raise ValueError('ArchFxVariableID: ID should be greater or equal than zero and less than 16^8')
+
+        self.set_from_single_id_slug(None, None, int2vid(id_))
 
     def formatted_id(self):
         """Formatted ID is the same as a Slug for a VariableID"""
@@ -244,7 +238,7 @@ class ArchFxStreamSlug(ArchFxCloudSlug):
         'pa': 'sa',
         'ps': 'ss'
     }
-    
+
     def __init__(self, sid=None):
         if not sid:
             self.stype = 'sd'
