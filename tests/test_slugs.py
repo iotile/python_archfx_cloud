@@ -1,5 +1,6 @@
 import unittest2 as unittest
 import datetime
+import pytest
 
 from archfx_cloud.utils.slugs import (
     ArchFxParentSlug,
@@ -8,6 +9,29 @@ from archfx_cloud.utils.slugs import (
     ArchFxStreamSlug,
     ArchFxStreamerSlug
 )
+
+ArchFxVariableID_CASES = (
+    ("int-no-scope", 0x5051, '0000-5051', 0, 0x5051),
+    ("int-with-scope", 0x10000 | 0x5051, '0001-5051', 1, 0x5051),
+    ("string-no-scope", '5051', '0000-5051', 0, 0x5051),
+    ("scoped-string", '0001-5051', '0001-5051', 1, 0x5051),
+    ("scoped-string-no-delimiter", 'f5051', '000f-5051', 0x0f, 0x5051),
+    ("int-tuple", (1, 0x5051), '0001-5051', 1, 0x5051),
+    ("string-tuple", ("1", "5051"), '0001-5051', 1, 0x5051),
+)
+ArchFxVariableID_NAMES = [x[0] for x in ArchFxVariableID_CASES]
+
+
+@pytest.mark.parametrize("name, input, formatted, scope, var", ArchFxVariableID_CASES, ids=ArchFxVariableID_NAMES)
+def test_ArchFxVariableID(name, input, formatted, scope, var):
+    result = ArchFxVariableID(input)
+    assert str(result) == formatted
+    assert result.formatted_id() == formatted
+    assert result.get_id() == (scope << 16) + var
+    assert result.var_id == var
+    assert result.var_hex == f"{var:04x}"
+    assert result.scope == scope
+    assert result.scope_hex == f"{scope:04x}"
 
 
 class SlugTestCase(unittest.TestCase):
@@ -28,6 +52,9 @@ class SlugTestCase(unittest.TestCase):
         id = ArchFxParentSlug('pl--1234')
         self.assertEqual(str(id), 'pl--0000-1234')
 
+        id = ArchFxParentSlug('pl--1')
+        self.assertEqual(str(id), 'pl--0000-0001')
+
         id = ArchFxParentSlug('0005')
         self.assertEqual(str(id), 'pl--0000-0005')
 
@@ -35,10 +62,9 @@ class SlugTestCase(unittest.TestCase):
 
         self.assertRaises(ValueError, ArchFxParentSlug, 'string')
         self.assertRaises(ValueError, ArchFxParentSlug, 'x--0000-0001')
-        self.assertRaises(ValueError, ArchFxParentSlug, 'p--1234-0000-0000-0001') # > 16bts
+        self.assertRaises(ValueError, ArchFxParentSlug, 'p--1234-0000-0000-0001')  # > 16bts
         self.assertRaises(ValueError, ArchFxParentSlug, -5)
-        self.assertRaises(ValueError, ArchFxParentSlug, pow(16,8))
-
+        self.assertRaises(ValueError, ArchFxParentSlug, pow(16, 8))
 
     def test_device_slug(self):
         id = ArchFxDeviceSlug(0)
@@ -55,6 +81,9 @@ class SlugTestCase(unittest.TestCase):
         self.assertEqual(str(id), 'd--0000-0000-0000-1234')
         id = ArchFxDeviceSlug(id)
         self.assertEqual(str(id), 'd--0000-0000-0000-1234')
+
+        id = ArchFxDeviceSlug('d--1')
+        self.assertEqual('d--0000-0000-0000-0001', str(id))
 
         id = ArchFxDeviceSlug('d--1234')
         self.assertEqual(str(id), 'd--0000-0000-0000-1234')
@@ -74,51 +103,11 @@ class SlugTestCase(unittest.TestCase):
 
         self.assertRaises(ValueError, ArchFxDeviceSlug, 'string')
         self.assertRaises(ValueError, ArchFxDeviceSlug, 'x--0000-0000-0000-0001')
-        self.assertRaises(ValueError, ArchFxDeviceSlug, 'd--1234-0000-0000-0001', False) # > 48bts
+        self.assertRaises(ValueError, ArchFxDeviceSlug, 'd--1234-0000-0000-0001', False)  # > 48bts
+        self.assertRaises(ValueError, ArchFxDeviceSlug, b'binary string')
         self.assertRaises(ValueError, ArchFxDeviceSlug, -5)
-        self.assertRaises(ValueError, ArchFxDeviceSlug, pow(16,16))
-        self.assertRaises(ValueError, ArchFxDeviceSlug, pow(16,12), False)
-
-    def test_variable_slugs(self):
-
-        var1 = ArchFxVariableID('5051')
-        self.assertEqual(str(var1), '0000-5051')
-        self.assertEqual(var1.formatted_id(), '0000-5051')
-        self.assertEqual(var1.get_id(), 0x5051)
-        self.assertEqual(var1.var_id, 0x5051)
-        self.assertEqual(var1.var_hex, '5051')
-        self.assertEqual(var1.scope, 0)
-
-        var2 = ArchFxVariableID(0x5051)
-        self.assertEqual(str(var2), '0000-5051')
-        self.assertEqual(var2.formatted_id(), '0000-5051')
-
-        var3 = ArchFxVariableID(0x10000 | 0x5051)
-        self.assertEqual(str(var3), '0001-5051')
-        self.assertEqual(var3.formatted_id(), '0001-5051')
-        self.assertEqual(var3.get_id(), 0x15051)
-        self.assertEqual(var3.var_hex, '5051')
-        self.assertEqual(var3.scope_hex, '0001')
-        self.assertEqual(var3.var_id, 0x5051)
-        self.assertEqual(var3.scope, 1)
-
-        var4 = ArchFxVariableID('0001-5051')
-        self.assertEqual(str(var4), '0001-5051')
-        self.assertEqual(var4.formatted_id(), '0001-5051')
-        self.assertEqual(var4.get_id(), 0x15051)
-        self.assertEqual(var4.var_hex, '5051')
-        self.assertEqual(var4.scope_hex, '0001')
-        self.assertEqual(var4.var_id, 0x5051)
-        self.assertEqual(var4.scope, 1)
-
-        var5 = ArchFxVariableID('f5051')
-        self.assertEqual(str(var5), '000f-5051')
-        self.assertEqual(var5.formatted_id(), '000f-5051')
-        self.assertEqual(var5.get_id(), 0xF5051)
-        self.assertEqual(var5.var_hex, '5051')
-        self.assertEqual(var5.scope_hex, '000f')
-        self.assertEqual(var5.var_id, 0x5051)
-        self.assertEqual(var5.scope, 0xF)
+        self.assertRaises(ValueError, ArchFxDeviceSlug, pow(16, 16))
+        self.assertRaises(ValueError, ArchFxDeviceSlug, pow(16, 12), False)
 
     def test_stream_slug(self):
         slug1 = ArchFxStreamSlug('sl--0000-0001--0000-0000-0000-0002--5051')

@@ -1,25 +1,23 @@
 # pylint: disable=invalid-name
 def int16gid(n):
-    return '-'.join(['{:04x}'.format(n >> (i << 4) & 0xFFFF) for i in range(0, 1)[::-1]])
+    return f"{n&0xFFFF:04x}"[-4:]
 
 
 def int32gid(n):
-    return '-'.join(['{:04x}'.format(n >> (i << 4) & 0xFFFF) for i in range(0, 2)[::-1]])
+    return f"{n&0xFFFFFFFF:09_x}".replace("_", "-")
 
 
 def int48gid(n):
-    return '-'.join(['{:04x}'.format(n >> (i << 4) & 0xFFFF) for i in range(0, 3)[::-1]])
+    return f"{n&0xFFFFFFFFFFFF:014_x}".replace("_", "-")
 
 
 def int64gid(n):
-    return '-'.join(['{:04x}'.format(n >> (i << 4) & 0xFFFF) for i in range(0, 4)[::-1]])
+    return f"{n&0xFFFFFFFFFFFFFFFF:019_x}".replace("_", "-")
 
 
-def int2bid(n):
-    return int16gid(n)
 # pylint: enable=invalid-name
 
-
+int2bid = int16gid
 int2did = int64gid
 int2did_short = int48gid
 int2fleet_id = int48gid
@@ -43,7 +41,7 @@ def fix_gid(gid, num_terms):
         # Only keep right most terms
         elements = elements[(len(elements) - num_terms):]
 
-    return'-'.join(elements)
+    return '-'.join(elements)
 
 
 def formatted_dbid(bid, did):
