@@ -1,4 +1,4 @@
-import unittest2 as unittest
+import unittest
 
 from archfx_cloud.utils.convert import (
     int16gid,
