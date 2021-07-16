@@ -2,6 +2,13 @@
 
 All major changes in each released version of the archfx-cloud plugin are listed here.
 
+## 0.11.0
+
+- Support Django SimpleJWT authentication variety
+- Fix scenario where base URL not ending with slash will create invalid URL paths
+- Use session for storage of authentication headers
+- Code modernization and cleanups
+
 ## 0.10.3
 
 - Fix bug where slug expansion produces malformed slugs

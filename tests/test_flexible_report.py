@@ -1,7 +1,9 @@
-import unittest2 as unittest
-import msgpack
 from datetime import datetime
+import unittest
+
 import dateutil.parser
+import msgpack
+
 from archfx_cloud.reports.flexible_dictionary import ArchFXFlexibleDictionaryReport
 from archfx_cloud.reports.report import ArchFXDataPoint
 

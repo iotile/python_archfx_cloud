@@ -1,5 +1,6 @@
-import unittest2 as unittest
 import datetime
+import unittest
+
 import pytest
 
 from archfx_cloud.utils.slugs import (
@@ -7,7 +8,6 @@ from archfx_cloud.utils.slugs import (
     ArchFxDeviceSlug,
     ArchFxVariableID,
     ArchFxStreamSlug,
-    ArchFxStreamerSlug
 )
 
 ArchFxVariableID_CASES = (

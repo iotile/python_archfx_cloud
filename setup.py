@@ -26,7 +26,7 @@ setup(name='archfx_cloud',
         'python-dateutil',
         'pytz',
         'msgpack>=1.0.2,<1.1',
-        'typedargs>=1.0.0,<2',
+        'typedargs>=1.1.2,<2',
     ],
     keywords=["iotile", "archfx", "arch", "iiot", "automation"],
     classifiers=[

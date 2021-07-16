@@ -13,14 +13,19 @@ Usage:
     obj_one = api.some_model(1).get()
     api.logout()
 """
-import json
-import requests
 import logging
-from .exceptions import *
+import requests
+from archfx_cloud.api.exceptions import (
+    ImproperlyConfigured,
+    HttpClientError,
+    HttpCouldNotVerifyServerError,
+    HttpNotFoundError,
+    HttpServerError,
+    RestBaseException,
+)
 
 DOMAIN_NAME = 'https://arch.archfx.io'
 API_PREFIX = 'api/v1'
-DEFAULT_HEADERS = {'Content-Type': 'application/json'}
 DEFAULT_TOKEN_TYPE = 'jwt'
 
 logger = logging.getLogger(__name__)
@@ -34,15 +39,10 @@ class RestResource:
     which may or may not have children.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, session, base_url, *args, **kwargs):
+        self._session = session
+        self._base_url = base_url
         self._store = kwargs
-        self._session = kwargs.get('session')
-
-        if self._session is None:
-            self._session = requests.Session()
-
-        if 'use_token' not in self._store:
-            self._store['use_token'] = False
 
     def __call__(self, id=None):
         """
@@ -52,53 +52,28 @@ class RestResource:
         a specific resource by it's ID.
         """
 
-        kwargs = {
-            'token': self._store['token'],
-            'use_token': self._store['use_token'],
-            'token_type': self._store['token_type'],
-            'base_url': self._store['base_url'],
-            'session': self._session
-        }
-
-        new_url = self._store['base_url']
-        if id is not None:
-            new_url = '{0}{1}/'.format(new_url, id)
+        new_url = self._base_url
 
         if not new_url.endswith('/'):
             new_url += '/'
 
-        kwargs['base_url'] = new_url
+        if id:
+            new_url += f'{id}/'
 
-        return self._get_resource(**kwargs)
+        return self._get_resource(session=self._session, base_url=new_url)
 
     def __getattr__(self, item):
         # Don't allow access to 'private' by convention attributes.
         if item.startswith("_"):
             raise AttributeError(item)
 
-        kwargs = self._copy_kwargs(self._store)
-        kwargs.update({'base_url': '{0}{1}/'.format(self._store["base_url"], item)})
+        kwargs = self._store.copy()
+        return self._get_resource(self._session, f"{self._base_url}{item}/", **kwargs)
 
-        return self._get_resource(**kwargs)
-
-    def _copy_kwargs(self, dictionary):
-        kwargs = {}
-        for key, value in self._iterator(dictionary):
-            kwargs[key] = value
-
-        return kwargs
-
-    def _iterator(self, d):
-        """
-        Helper to get and a proper dict iterator with Py2k and Py3k
-        """
-        try:
-            return d.iteritems()
-        except AttributeError:
-            return d.items()
+    def _get_resource(self, session, base_url, **kwargs):
+        return self.__class__(session, base_url, **kwargs)
 
     def _check_for_errors(self, resp, url):
-
         if 400 <= resp.status_code <= 499:
             exception_class = HttpNotFoundError if resp.status_code == 404 else HttpClientError
             error_msg = 'Client Error {0}: {1}'.format(resp.status_code, url)
@@ -108,29 +83,19 @@ class RestResource:
         elif 500 <= resp.status_code <= 599:
             raise HttpServerError("Server Error %s: %s" % (resp.status_code, url), response=resp, content=resp.content)
 
-    def _handle_redirect(self, resp, **kwargs):
-        # @@@ Hacky, see description in __call__
-        resource_obj = self(url_override=resp.headers["location"])
-        return resource_obj.get(**kwargs)
-
     def _try_to_serialize_response(self, resp):
         if resp.status_code in [204, 205]:
             return
 
-        if resp.content:
-            if type(resp.content) == bytes:
-                try:
-                    encoding = requests.utils.guess_json_utf(resp.content)
-                    return json.loads(resp.content.decode(encoding))
-                except Exception:
-                    return resp.content
-            return json.loads(resp.content)
-        else:
+        if not resp.content:
+            return resp.content
+        try:
+            return resp.json()
+        except Exception:
             return resp.content
 
     def _process_response(self, resp):
-
-        self._check_for_errors(resp, self.url())
+        self._check_for_errors(resp, self._base_url)
 
         if 200 <= resp.status_code <= 299:
             return self._try_to_serialize_response(resp)
@@ -138,77 +103,32 @@ class RestResource:
             return  # @@@ We should probably do some sort of error here? (Is this even possible?)
 
     def url(self):
-        url = self._store["base_url"]
-        return url
+        return self._base_url
 
-    def _get_header(self):
-        headers = DEFAULT_HEADERS.copy()
-        if self._store['use_token']:
-            if "token" not in self._store:
-                raise RestBaseException('No Token')
-            authorization_str = '{0} {1}'.format(self._store['token_type'], self._store["token"])
-            headers['Authorization'] = authorization_str
-
-        return headers
+    def _convert_ssl_exception(self, requester, **kwargs):
+        try:
+            return requester(self._base_url, **kwargs)
+        except requests.exceptions.SSLError as err:
+            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err) from err
 
     def get(self, **kwargs):
-        try:
-            resp = self._session.get(self.url(), headers=self._get_header(), params=kwargs)
-        except requests.exceptions.SSLError as err:
-            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err)
-
+        resp = self._convert_ssl_exception(self._session.get, params=kwargs)
         return self._process_response(resp)
 
     def post(self, data=None, **kwargs):
-        if data:
-            payload = json.dumps(data)
-        else:
-            payload = None
-
-        try:
-            resp = self._session.post(
-                self.url(), data=payload, headers=self._get_header(), params=kwargs)
-        except requests.exceptions.SSLError as err:
-            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err)
-
+        resp = self._convert_ssl_exception(self._session.post, json=data, params=kwargs)
         return self._process_response(resp)
 
     def patch(self, data=None, **kwargs):
-        if data:
-            payload = json.dumps(data)
-        else:
-            payload = None
-
-        try:
-            resp = self._session.patch(self.url(), data=payload, headers=self._get_header(), params=kwargs)
-        except requests.exceptions.SSLError as err:
-            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err)
-
+        resp = self._convert_ssl_exception(self._session.patch, json=data, params=kwargs)
         return self._process_response(resp)
 
     def put(self, data=None, **kwargs):
-        if data:
-            payload = json.dumps(data)
-        else:
-            payload = None
-
-        try:
-            resp = self._session.put(self.url(), data=payload, headers=self._get_header(), params=kwargs)
-        except requests.exceptions.SSLError as err:
-            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err)
-
+        resp = self._convert_ssl_exception(self._session.put, json=data, params=kwargs)
         return self._process_response(resp)
 
     def delete(self, data=None, **kwargs):
-        if data:
-            payload = json.dumps(data)
-        else:
-            payload = None
-
-        try:
-            resp = self._session.delete(self.url(), headers=self._get_header(), data=payload, params=kwargs)
-        except requests.exceptions.SSLError as err:
-            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err)
+        resp = self._convert_ssl_exception(self._session.delete, json=data, params=kwargs)
 
         if 200 <= resp.status_code <= 299:
             if resp.status_code == 204:
@@ -234,22 +154,9 @@ class RestResource:
             'file': fp
         }
 
-        headers = {}
-        authorization_str = '{0} {1}'.format(self._store['token_type'], self._store["token"])
-        headers['Authorization'] = authorization_str
         logger.debug('Uploading file to {}'.format(str(kwargs)))
 
-        try:
-            resp = self._session.post(
-                self.url(),
-                data=data,
-                files=files,
-                headers=headers,
-                params=kwargs,
-            )
-        except requests.exceptions.SSLError as err:
-            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err)
-
+        resp = self._convert_ssl_exception(self._session.post, data=data, files=files, params=kwargs)
         return self._process_response(resp)
 
     def upload_file(self, filename, data=None, mode='rb', **kwargs):
@@ -268,10 +175,7 @@ class RestResource:
         with open(filename, mode) as fp:
             return self.upload_fp(fp, data, **kwargs)
 
-        raise RestBaseException('Unable to open and/or upload file')
-
-    def _get_resource(self, **kwargs):
-        return self.__class__(**kwargs)
+        raise RestBaseException("Unable to open and/or upload file")
 
 
 class _TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
@@ -282,6 +186,7 @@ class _TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
 
     Short answer is that Session() objects don't support timeouts.
     """
+
     def __init__(self, timeout=None, *args, **kwargs):
         self.timeout = timeout
         super(_TimeoutHTTPAdapter, self).__init__(*args, **kwargs)
@@ -293,6 +198,7 @@ class _TimeoutHTTPAdapter(requests.adapters.HTTPAdapter):
 
 class Api(object):
     token = None
+    refresh_token_data = None
     token_type = DEFAULT_TOKEN_TYPE
     domain = DOMAIN_NAME
     resource_class = RestResource
@@ -301,7 +207,7 @@ class Api(object):
         if domain:
             self.domain = domain
 
-        self.base_url = '{0}/{1}'.format(self.domain, API_PREFIX)
+        self.base_url = f"{self.domain}/{API_PREFIX}"
         self.use_token = True
         if token_type:
             self.token_type = token_type
@@ -311,53 +217,72 @@ class Api(object):
 
         if retries is not None or timeout is not None:
             adapter = _TimeoutHTTPAdapter(max_retries=retries, timeout=timeout)
-            self.session.mount('https://', adapter)
-            self.session.mount('http://', adapter)
+            self.session.mount("https://", adapter)
+            self.session.mount("http://", adapter)
+
+    def _destroy_tokens(self):
+        self.token = None
+        self.refresh_token_data = None
+        self.session.headers.pop("Authorization", "")
+
+    def _validate_and_set_tokens(self, data):
+        success = False
+        if isinstance(data, str):
+            self.token = data
+            success = True
+        elif "token" in data:
+            self.token = data["token"]
+            success = True
+        elif "access" in data:
+            self.token = data["access"]
+            self.refresh_token_data = data["refresh"]
+            success = True
+        if success:
+            self.session.headers["Authorization"] = f"{self.token_type} {self.token}"
+        return success
 
     def set_token(self, token, token_type=None):
-        self.token = token
         if token_type:
             self.token_type = token_type
+        if not self._validate_and_set_tokens(token):
+            raise ImproperlyConfigured(f"Invalid token: %s")
+
+    def url(self, section):
+        return f"{self.base_url}/{section}/"
 
     def login(self, password, email):
-        data = {'email': email, 'password': password}
-        url = '{0}/{1}'.format(self.base_url, 'auth/login/')
-
-        payload = json.dumps(data)
-
         try:
-            r = self.session.post(url, data=payload, headers=DEFAULT_HEADERS)
+            r = self.session.post(self.url("auth/login"), json={"email": email, "password": password})
         except requests.exceptions.SSLError as err:
-            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err)
+            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err) from err
 
         if r.status_code == 200:
-            content = json.loads(r.content.decode())
-            if self.token_type in content:
-                self.token = content[self.token_type]
+            content = r.json()
+            if access_token := content.get('jwt'):
+                if not self._validate_and_set_tokens(access_token):
+                    logger.warning(f"Incompatible JWT token received from server: {access_token}")
+                if refresh_token := content.get('jwt_refresh_token'):
+                    self.refresh_token_data = refresh_token
 
             self.username = content['username']
             logger.debug('Welcome @{0}'.format(self.username))
             return True
         else:
-            logger.error('Login failed: ' + str(r.status_code) + ' ' + r.content.decode())
+            logger.error("Login failed: " + str(r.status_code) + " " + r.content.decode())
             return False
 
     def logout(self):
-        url = '{0}/{1}'.format(self.base_url, 'auth/logout/')
-        headers = DEFAULT_HEADERS.copy()
-        headers['Authorization'] = '{0} {1}'.format(self.token_type, self.token)
-
         try:
-            r = self.session.post(url, headers=headers)
+            r = self.session.post(self.url("auth/logout"), json={})
         except requests.exceptions.SSLError as err:
-            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err)
+            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err) from err
 
         if r.status_code == 204:
             logger.debug('Goodbye @{0}'.format(self.username))
             self.username = None
-            self.token = None
+            self._destroy_tokens()
         else:
-            logger.error('Logout failed: ' + str(r.status_code) + ' ' + r.content.decode())
+            logger.error('Logout failed: %s %s', r.status_code, r.content.decode())
 
     def refresh_token(self):
         """
@@ -366,25 +291,24 @@ class Api(object):
         :return: True if token was refreshed. False otherwise
         """
         assert self.token_type == DEFAULT_TOKEN_TYPE
-        url = '{0}/{1}'.format(self.base_url, 'auth/api-jwt-refresh/')
-
-        payload = json.dumps({'token': self.token})
+        if self.refresh_token_data:
+            data = {"refresh": self.refresh_token_data}
+        else:
+            data = {"token": self.token}
 
         try:
-            r = self.session.post(url, data=payload, headers=DEFAULT_HEADERS)
+            r = self.session.post(self.url("auth/api-jwt-refresh"), json=data)
         except requests.exceptions.SSLError as err:
-            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err)
+            raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err) from err
 
         if r.status_code == 200:
-            content = json.loads(r.content.decode())
-            if 'token' in content:
-                self.token = content['token']
-
+            content = r.json()
+            if self._validate_and_set_tokens(content):
                 logger.info('Token refreshed')
                 return True
 
-        logger.error('Token refresh failed: ' + str(r.status_code) + ' ' + r.content.decode())
-        self.token = None
+        logger.error("Token refresh failed: %s %s", r.status_code, r.content.decode())
+        self._destroy_tokens()
         return False
 
     def __getattr__(self, item):
@@ -398,17 +322,4 @@ class Api(object):
         if item.startswith("_"):
             raise AttributeError(item)
 
-        kwargs = {
-            'token': self.token,
-            'base_url': self.base_url,
-            'use_token': self.use_token,
-            'token_type': self.token_type,
-            'session': self.session
-        }
-
-        kwargs.update({'base_url': '{0}/{1}/'.format(kwargs['base_url'], item)})
-
-        return self._get_resource(**kwargs)
-
-    def _get_resource(self, **kwargs):
-        return self.resource_class(**kwargs)
+        return self.resource_class(session=self.session, base_url=self.url(item))
