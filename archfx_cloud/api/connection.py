@@ -15,7 +15,7 @@ Usage:
 """
 import logging
 import requests
-from .exceptions import (
+from archfx_cloud.api.exceptions import (
     ImproperlyConfigured,
     HttpClientError,
     HttpCouldNotVerifyServerError,
@@ -258,9 +258,11 @@ class Api(object):
 
         if r.status_code == 200:
             content = r.json()
-            if self.token_type in content:
-                if not self._validate_and_set_tokens(content[self.token_type]):
-                    logger.warning("Incompatible %s token received from server", self.token_type)
+            if access_token := content.get('jwt'):
+                if not self._validate_and_set_tokens(access_token):
+                    logger.warning(f"Incompatible JWT token received from server: {access_token}")
+                if refresh_token := content.get('jwt_refresh_token'):
+                    self.refresh_token_data = refresh_token
 
             self.username = content['username']
             logger.debug('Welcome @{0}'.format(self.username))

@@ -84,16 +84,14 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(api.token, 'new-token')
 
     @requests_mock.Mocker()
-    def test_new_jwt_login(self, m):
+    def test_login_new_jwt(self, m):
         m.post(
             'http://archfx.test/api/v1/auth/login/',
             additional_matcher=lambda request: 'Authorization' not in request.headers,
             json={
                 'username': 'user1',
-                'jwt': {
-                    'access': 'access-token',
-                    'refresh': 'refresh-token',
-                },
+                'jwt': 'access-token',
+                'jwt_refresh_token': 'refresh-token',
             }
         )
         api = Api(domain='http://archfx.test')
@@ -110,10 +108,8 @@ class ApiTestCase(unittest.TestCase):
             additional_matcher=lambda request: 'Authorization' not in request.headers,
             json={
                 'username': 'user1',
-                'jwt': {
-                    'access': 'access-token',
-                    'refresh': 'refresh-token',
-                },
+                'jwt': 'access-token',
+                'jwt_refresh_token': 'refresh-token',
             }
         )
         api = Api(domain='http://archfx.test')
