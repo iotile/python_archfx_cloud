@@ -13,6 +13,7 @@ Usage:
     obj_one = api.some_model(1).get()
     api.logout()
 """
+from io import BytesIO
 import logging
 import requests
 from archfx_cloud.api.exceptions import (
@@ -23,6 +24,7 @@ from archfx_cloud.api.exceptions import (
     HttpServerError,
     RestBaseException,
 )
+from archfx_cloud.reports.flexible_dictionary import ArchFXFlexibleDictionaryReport
 
 DOMAIN_NAME = 'https://arch.archfx.io'
 API_PREFIX = 'api/v1'
@@ -310,6 +312,24 @@ class Api(object):
         logger.error("Token refresh failed: %s %s", r.status_code, r.content.decode())
         self._destroy_tokens()
         return False
+
+    def upload_streamer_report(self, report: ArchFXFlexibleDictionaryReport):
+        """Uploads ArchFXFlexibleDictionaryReport as a file
+
+        Args:
+            report: report to upload
+
+        Returns:
+            int: The number of new readings that were accepted by the cloud as novel.
+        """
+        return self("streamer/report").upload_fp(
+            ("report.mp", BytesIO(report.encode())),
+            timestamp=report.received_time.isoformat(),
+        )['count']
+
+
+    def __call__(self, id):
+        return self.resource_class(session=self.session, base_url=self.url(id))
 
     def __getattr__(self, item):
         """

@@ -2,6 +2,10 @@
 
 All major changes in each released version of the archfx-cloud plugin are listed here.
 
+## 0.12.0
+
+- Support `ArchFXFlexibleDictionaryReport` direct upload
+
 ## 0.11.0
 
 - Support Django SimpleJWT authentication variety

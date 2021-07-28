@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from io import BytesIO
 import json
 import requests
@@ -6,6 +7,8 @@ import unittest
 
 from archfx_cloud.api.connection import Api
 from archfx_cloud.api.exceptions import HttpClientError, HttpServerError
+from archfx_cloud.reports.flexible_dictionary import ArchFXFlexibleDictionaryReport
+from archfx_cloud.reports.report import ArchFXDataPoint
 
 
 class ApiTestCase(unittest.TestCase):
@@ -141,6 +144,45 @@ class ApiTestCase(unittest.TestCase):
         api = Api(domain='http://archfx.test')
         resp = api.test.upload_fp(BytesIO(b"test"))  # "No mock address" means content-type is broken!
         self.assertEqual(resp['result'], 'ok')
+
+        request_body = m.request_history[0]._request.body
+        self.assertIn(b'Content-Disposition: form-data; name="file"; filename=', request_body)
+
+
+    @requests_mock.Mocker()
+    def test_upload_streamer_report(self, m):
+        """Testing that we can upload a FlexibleDictionaryReport."""
+        report = ArchFXFlexibleDictionaryReport.FromReadings(
+            device='d--1234',
+            data=[
+                ArchFXDataPoint(
+                    timestamp=datetime(2021, 1, 20, tzinfo=timezone.utc),
+                    stream='0001-5030',
+                    value=2.0,
+                    summary_data={'foo': 5, 'bar': 'foobar'},
+                    raw_data=None,
+                    reading_id=1000
+                ),
+            ],
+            report_id=1003,
+            streamer=0xff,
+            sent_timestamp=datetime(2021, 1, 20, tzinfo=timezone.utc),
+        )
+        sent_time_str = report.received_time.isoformat().replace(":", "%3A")
+        m.post(
+            f"http://archfx.test/api/v1/streamer/report/?timestamp={sent_time_str}",
+            json={"count": 1},
+        )
+
+
+        api = Api(domain='http://archfx.test')
+        resp = api.upload_streamer_report(report)
+        self.assertEqual(resp, 1)
+
+        request = m.request_history[0]._request
+        self.assertIn('multipart/form-data; boundary=', request.headers["Content-Type"])
+        self.assertIn(b'Content-Disposition: form-data; name="file"; filename=', request.body)
+        self.assertIn(b'filename="report.mp"', request.body)  # Check filename correctness
 
     @requests_mock.Mocker()
     def test_get_list(self, m):
