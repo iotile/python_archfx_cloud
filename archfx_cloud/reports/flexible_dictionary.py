@@ -9,6 +9,7 @@ from ..utils.slugs import ArchFxDeviceSlug
 from .exceptions import DataError
 from .report import ArchFXDataPoint, ArchFXReport
 
+
 class ArchFXFlexibleDictionaryReport(ArchFXReport):
     """A list of events and readings encoded as a dictionary.
     This report format is designed to be suitable for storing in any
