@@ -127,7 +127,7 @@ class ArchFXFlexibleDictionaryReport(ArchFXReport):
         """
         return cloud("streamer/report").upload_fp(
             ("report.mp", BytesIO(self.encode())),
-            timestamp=self.received_time.isoformat(),
+            timestamp=self.sent_timestamp,
         )['count']
 
 

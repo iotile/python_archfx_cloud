@@ -171,7 +171,7 @@ class FlexibleReportTests(unittest.TestCase):
             streamer=0xff,
             sent_timestamp=datetime(2021, 1, 20, tzinfo=timezone.utc),
         )
-        sent_time_str = report.received_time.isoformat().replace(":", "%3A")
+        sent_time_str = report.sent_timestamp.replace(":", "%3A").replace("+", "%2B")
         m.post(
             f"http://archfx.test/api/v1/streamer/report/?timestamp={sent_time_str}",
             json={"count": 1},
