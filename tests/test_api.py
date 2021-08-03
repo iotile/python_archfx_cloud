@@ -142,6 +142,9 @@ class ApiTestCase(unittest.TestCase):
         resp = api.test.upload_fp(BytesIO(b"test"))  # "No mock address" means content-type is broken!
         self.assertEqual(resp['result'], 'ok')
 
+        request_body = m.request_history[0]._request.body
+        self.assertIn(b'Content-Disposition: form-data; name="file"; filename=', request_body)
+
     @requests_mock.Mocker()
     def test_get_list(self, m):
         payload = {

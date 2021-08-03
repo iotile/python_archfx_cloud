@@ -1,6 +1,7 @@
 """A flexible dictionary based report format suitable for msgpack and json serialization."""
 
 import datetime
+from io import BytesIO
 from typing import List, Union
 import pytz
 import msgpack
@@ -114,6 +115,20 @@ class ArchFXFlexibleDictionaryReport(ArchFXReport):
         """Write Streamer Report to disk as a msgpack file"""
         with open(file_path, "wb") as outfile:
             outfile.write(self.encode())
+
+    def upload(self, cloud):
+        """Uploads this report into ArchFX cloud
+
+        Args:
+            cloud: an instance of archfx_cloud.api.connection.Api. Must be authenticated.
+
+        Returns:
+            int: The number of new readings that were accepted by the cloud as novel.
+        """
+        return cloud("streamer/report").upload_fp(
+            ("report.mp", BytesIO(self.encode())),
+            timestamp=self.sent_timestamp,
+        )['count']
 
 
 def _encode_datetime(obj):

@@ -311,6 +311,9 @@ class Api(object):
         self._destroy_tokens()
         return False
 
+    def __call__(self, id):
+        return self.resource_class(session=self.session, base_url=self.url(id))
+
     def __getattr__(self, item):
         """
         Instead of raising an attribute error, the undefined attribute will
