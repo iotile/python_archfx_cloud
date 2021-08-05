@@ -2,6 +2,10 @@
 
 All major changes in each released version of the archfx-cloud plugin are listed here.
 
+## 0.12.1
+
+- Switch to `auth/api-jwt-auth` for authentication
+
 ## 0.12.0
 
 - Support `ArchFXFlexibleDictionaryReport` direct upload

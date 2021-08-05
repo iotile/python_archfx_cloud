@@ -252,16 +252,16 @@ class Api(object):
 
     def login(self, password, email):
         try:
-            r = self.session.post(self.url("auth/login"), json={"email": email, "password": password})
+            r = self.session.post(self.url("auth/api-jwt-auth"), json={"username": email, "password": password})
         except requests.exceptions.SSLError as err:
             raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err) from err
 
         if r.status_code == 200:
             content = r.json()
-            if access_token := content.get('jwt'):
+            if access_token := content.get('access', content.get('token')):
                 if not self._validate_and_set_tokens(access_token):
                     logger.warning(f"Incompatible JWT token received from server: {access_token}")
-                if refresh_token := content.get('jwt_refresh_token'):
+                if refresh_token := content.get('refresh'):
                     self.refresh_token_data = refresh_token
 
             self.username = content['username']
