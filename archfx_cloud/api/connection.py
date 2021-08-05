@@ -264,8 +264,6 @@ class Api(object):
                 if refresh_token := content.get('refresh'):
                     self.refresh_token_data = refresh_token
 
-            self.username = content['username']
-            logger.debug('Welcome @{0}'.format(self.username))
             return True
         else:
             logger.error("Login failed: " + str(r.status_code) + " " + r.content.decode())
@@ -278,8 +276,6 @@ class Api(object):
             raise HttpCouldNotVerifyServerError("Could not verify the server's SSL certificate", err) from err
 
         if r.status_code == 204:
-            logger.debug('Goodbye @{0}'.format(self.username))
-            self.username = None
             self._destroy_tokens()
         else:
             logger.error('Logout failed: %s %s', r.status_code, r.content.decode())

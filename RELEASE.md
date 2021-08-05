@@ -2,9 +2,10 @@
 
 All major changes in each released version of the archfx-cloud plugin are listed here.
 
-## 0.12.1
+## 0.13.0
 
 - Switch to `auth/api-jwt-auth` for authentication
+- Remove Api.username
 
 ## 0.12.0
 

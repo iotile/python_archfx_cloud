@@ -33,29 +33,30 @@ class ApiTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_login(self, m):
         payload = {
-            'jwt': 'big-token',
-            'username': 'user1'
+            'token': 'big-token1',
+            'access': 'big-token1',
+            'refresg': 'big-token2',
         }
-        m.post('http://archfx.test/api/v1/auth/login/', text=json.dumps(payload))
+        m.post('http://archfx.test/api/v1/auth/api-jwt-auth/', text=json.dumps(payload))
 
         api = Api(domain='http://archfx.test')
         ok = api.login(email='user1@test.com', password='pass')
         self.assertTrue(ok)
-        self.assertEqual(api.username, 'user1')
-        self.assertEqual(api.token, 'big-token')
-        self.assertIsNone(api.refresh_token_data)
+        self.assertEqual(api.token, 'big-token1')
+        self.assertIsNone(api.refresh_token_data, 'big-token2')
 
     @requests_mock.Mocker()
     def test_logout(self, m):
         payload = {
-            'jwt': 'big-token',
-            'username': 'user1'
+            'token': 'big-token1',
+            'access': 'big-token1',
+            'refresg': 'big-token2',
         }
 
         # login works only if there is no Authorization header in the request
         def match_request_headers(request):
             return 'Authorization' not in request.headers
-        m.post('http://archfx.test/api/v1/auth/login/', additional_matcher=match_request_headers, text=json.dumps(payload))
+        m.post('http://archfx.test/api/v1/auth/api-jwt-auth/', additional_matcher=match_request_headers, text=json.dumps(payload))
         m.post('http://archfx.test/api/v1/auth/logout/', status_code=204)
 
         api = Api(domain='http://archfx.test')
@@ -63,7 +64,7 @@ class ApiTestCase(unittest.TestCase):
         self.assertTrue(ok)
 
         api.logout()
-        self.assertEqual(api.username, None)
+        self.assertEqual(api.refresh_token_data, None)
         self.assertEqual(api.token, None)
 
         # can log in again
@@ -86,30 +87,29 @@ class ApiTestCase(unittest.TestCase):
     @requests_mock.Mocker()
     def test_login_new_jwt(self, m):
         m.post(
-            'http://archfx.test/api/v1/auth/login/',
+            'http://archfx.test/api/v1/auth/api-jwt-auth/',
             additional_matcher=lambda request: 'Authorization' not in request.headers,
             json={
-                'username': 'user1',
-                'jwt': 'access-token',
-                'jwt_refresh_token': 'refresh-token',
+                'token': 'access-token',
+                'access': 'access-token',
+                'refresh': 'refresh-token',
             }
         )
         api = Api(domain='http://archfx.test')
         ok = api.login(email='user1@test.com', password='pass')
         self.assertTrue(ok)
-        self.assertEqual(api.username, 'user1')
         self.assertEqual(api.token, 'access-token')
         self.assertEqual(api.refresh_token_data, 'refresh-token')
 
     @requests_mock.Mocker()
     def test_new_jwt_refresh(self, m):
         m.post(
-            'http://archfx.test/api/v1/auth/login/',
+            'http://archfx.test/api/v1/auth/api-jwt-auth/',
             additional_matcher=lambda request: 'Authorization' not in request.headers,
             json={
-                'username': 'user1',
-                'jwt': 'access-token',
-                'jwt_refresh_token': 'refresh-token',
+                'token': 'access-token',
+                'access': 'access-token',
+                'refresh': 'refresh-token',
             }
         )
         api = Api(domain='http://archfx.test')
