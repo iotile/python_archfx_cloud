@@ -24,7 +24,6 @@ setup(name='archfx_cloud',
     install_requires=[
         'requests>=2.21.0',
         'python-dateutil',
-        'pytz',
         'msgpack>=1.0.2,<1.1',
         'typedargs>=1.1.2,<2',
     ],
