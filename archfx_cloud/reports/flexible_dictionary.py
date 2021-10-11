@@ -3,7 +3,6 @@
 import datetime
 from io import BytesIO
 from typing import List, Union
-import pytz
 import msgpack
 from ..utils.slugs import ArchFxDeviceSlug
 from .exceptions import DataError
@@ -135,7 +134,7 @@ def _encode_datetime(obj):
     """Pack a datetime into an isoformat string."""
     if isinstance(obj, datetime.datetime):
         if obj.tzinfo:
-            obj = obj.astimezone(pytz.timezone('UTC'))
+            obj = obj.astimezone(datetime.timezone.utc)
         dt_str = obj.isoformat()
         if dt_str[-6] in ['-', '+']:
             return dt_str

@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 import unittest
 
-import dateutil.parser
 import msgpack
 import requests_mock
 
@@ -90,7 +89,7 @@ class FlexibleReportTests(unittest.TestCase):
         events = []
 
         reading = ArchFXDataPoint(
-            timestamp=dateutil.parser.parse('2021-01-20T00:00:00.100000Z'),
+            timestamp=datetime(2021, 1, 20, 0, 0, 0, 100000, timezone.utc),
             stream='0001-5030',
             value=2.0,
             summary_data={'foo': 5, 'bar': 'foobar'},
@@ -99,7 +98,7 @@ class FlexibleReportTests(unittest.TestCase):
         )
         events.append(reading)
         reading = ArchFXDataPoint(
-            timestamp=dateutil.parser.parse('2021-01-20T00:00:00.200000+00:00'),
+            timestamp=datetime(2021, 1, 20, 0, 0, 0, 200000, timezone.utc),
             stream=0x15030,
             value=3.0,
             summary_data={'foo': 6, 'bar': 'foobar'},
@@ -107,14 +106,14 @@ class FlexibleReportTests(unittest.TestCase):
         )
         events.append(reading)
         reading = ArchFXDataPoint(
-            timestamp=dateutil.parser.parse('2021-01-20T00:00:00.200000+00:00'),
+            timestamp=datetime(2021, 1, 20, 0, 0, 0, 200000, timezone.utc),
             stream='5051',
             value=1.0,
             reading_id=1002
         )
         events.append(reading)
 
-        sent_time = dateutil.parser.parse('2021-01-20T00:00:00.300000Z')
+        sent_time = datetime(2021, 1, 20, 0, 0, 0, 300000, timezone.utc)
         report = ArchFXFlexibleDictionaryReport.FromReadings(
             device='d--1234',
             data=events,

@@ -2,6 +2,10 @@
 
 All major changes in each released version of the archfx-cloud plugin are listed here.
 
+## 0.13.0
+
+- Removed unneed pytz dependency
+
 ## 0.12.0
 
 - Support `ArchFXFlexibleDictionaryReport` direct upload
