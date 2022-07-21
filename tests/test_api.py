@@ -5,7 +5,7 @@ import requests_mock
 import unittest
 
 from archfx_cloud.api.connection import Api
-from archfx_cloud.api.exceptions import HttpClientError, HttpServerError
+from archfx_cloud.api.exceptions import HttpClientError, HttpServerError, ImproperlyConfigured
 
 
 class ApiTestCase(unittest.TestCase):
@@ -20,8 +20,27 @@ class ApiTestCase(unittest.TestCase):
     def test_set_token(self):
         api = Api()
         self.assertEqual(api.token, None)
+
         api.set_token('big-token')
         self.assertEqual(api.token, 'big-token')
+
+        api.set_token({
+            'access': 'access-token',
+            'refresh': 'refresh-token',
+        })
+        self.assertEqual(api.token, 'access-token')
+        self.assertEqual(api.refresh_token_data, 'refresh-token')
+
+        api.set_token({
+            'token': 'another-token',
+        })
+        self.assertEqual(api.token, 'another-token')
+        self.assertEqual(api.refresh_token_data, 'refresh-token')
+
+        with self.assertRaises(ImproperlyConfigured):
+            api.set_token({
+                'other': 'dummy',
+            })
 
     @requests_mock.Mocker()
     def test_timeout(self, m):
