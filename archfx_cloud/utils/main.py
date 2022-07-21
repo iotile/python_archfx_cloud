@@ -46,10 +46,6 @@ class BaseMain(object):
         self.args = self.parser.parse_args()
         self.config_logging()
 
-        if not self.args.email:
-            LOG.error('User email is required: --user')
-            sys.exit(1)
-
     def _critical_exit(self, msg):
         LOG.error(msg)
         sys.exit(1)
@@ -138,6 +134,10 @@ class BaseMain(object):
             except HttpClientError as err:
                 LOG.debug(err)
                 LOG.info('Token is illegal or has expired')
+
+        if not self.args.email:
+            LOG.error('User email is required: --user')
+            sys.exit(1)
 
         password = getpass.getpass()
         ok = self.api.login(email=self.args.email, password=password)
