@@ -25,7 +25,7 @@ class BaseMain(object):
         Process any extra arguments
         Only hard codes one required argument: --user
         Additional arguments can be configured by overwriting the add_extra_args() method
-        Logging configuration can be changed by overwritting the config_logging() method
+        Logging configuration can be changed by overwriting the config_logging() method
         """
         CONFIG.read(config_path)
         self.parser = argparse.ArgumentParser(description=__doc__)
@@ -105,7 +105,7 @@ class BaseMain(object):
 
     def login(self) -> bool:
         """
-        Check if we can user token from .ini
+        Check if we can use token from .ini
         """
 
         customer_section = f'c-{self.args.customer}'
