@@ -18,7 +18,7 @@ class BaseMain(object):
     domain = 'https://arch.archfx.io'
     logging_level = logging.INFO
 
-    def __init__(self):
+    def __init__(self, config_path='.ini'):
         """
         Initialize Logging configuration
         Initialize argument parsing
@@ -27,7 +27,7 @@ class BaseMain(object):
         Additional arguments can be configured by overwriting the add_extra_args() method
         Logging configuration can be changed by overwritting the config_logging() method
         """
-        CONFIG.read('.ini')
+        CONFIG.read(config_path)
         self.parser = argparse.ArgumentParser(description=__doc__)
         self.parser.add_argument(
             '-u', '--user', dest='email', type=str, help='Email used for login'
