@@ -112,24 +112,32 @@ class BaseMain(object):
         Check if we can user token from .ini
         """
 
-        # If there is a token defined, check if legal
-        ini_token_key = f'c-{self.args.customer}'
+        customer_section = f'c-{self.args.customer}'
         try:
-            ini_cloud = CONFIG[ini_token_key]
-            token = ini_cloud.get('token')
+            customer_config = CONFIG[customer_section]
+
+            token = customer_config.get('token')
+            jwt = {
+                'access': customer_config.get('jwt_access'),
+                'refresh': customer_config.get('jwt_refresh')
+            }
         except (configparser.NoSectionError, KeyError):
             token = None
+            jwt = None
 
         if token:
-            self.api.set_token(token)
+            self.api.set_token(token, token_type='token')
+        elif jwt:
+            self.api.set_token(jwt, token_type='jwt')
 
-        try:
-            user = self.api.account.get()
-            LOG.info('Using token for {}'.format(user['results'][0]['email']))
-            return True
-        except HttpClientError as err:
-            LOG.debug(err)
-            LOG.info('Token is illegal or has expired')
+        if self.api.token:
+            try:
+                user = self.api.account.get()
+                LOG.info('Using token for {}'.format(user['results'][0]['email']))
+                return True
+            except HttpClientError as err:
+                LOG.debug(err)
+                LOG.info('Token is illegal or has expired')
 
         password = getpass.getpass()
         ok = self.api.login(email=self.args.email, password=password)
