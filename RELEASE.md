@@ -2,6 +2,13 @@
 
 All major changes in each released version of the archfx-cloud plugin are listed here.
 
+## 0.14.0
+
+- Add optional parameter to BaseMain constructor to give the config file path (.ini)
+- Config file can configure JWT token (access and refresh)
+- Provided user email is not required anymore if logging in via token
+- Avoid one API request with empty token if no token provided
+
 ## 0.13.0
 
 - Removed unneed pytz dependency

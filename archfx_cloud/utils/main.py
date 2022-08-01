@@ -18,16 +18,16 @@ class BaseMain(object):
     domain = 'https://arch.archfx.io'
     logging_level = logging.INFO
 
-    def __init__(self):
+    def __init__(self, config_path='.ini'):
         """
         Initialize Logging configuration
         Initialize argument parsing
         Process any extra arguments
         Only hard codes one required argument: --user
         Additional arguments can be configured by overwriting the add_extra_args() method
-        Logging configuration can be changed by overwritting the config_logging() method
+        Logging configuration can be changed by overwriting the config_logging() method
         """
-        CONFIG.read('.ini')
+        CONFIG.read(config_path)
         self.parser = argparse.ArgumentParser(description=__doc__)
         self.parser.add_argument(
             '-u', '--user', dest='email', type=str, help='Email used for login'
@@ -45,10 +45,6 @@ class BaseMain(object):
 
         self.args = self.parser.parse_args()
         self.config_logging()
-
-        if not self.args.email:
-            LOG.error('User email is required: --user')
-            sys.exit(1)
 
     def _critical_exit(self, msg):
         LOG.error(msg)
@@ -109,27 +105,39 @@ class BaseMain(object):
 
     def login(self) -> bool:
         """
-        Check if we can user token from .ini
+        Check if we can use token from .ini
         """
 
-        # If there is a token defined, check if legal
-        ini_token_key = f'c-{self.args.customer}'
+        customer_section = f'c-{self.args.customer}'
         try:
-            ini_cloud = CONFIG[ini_token_key]
-            token = ini_cloud.get('token')
+            customer_config = CONFIG[customer_section]
+
+            token = customer_config.get('token')
+            jwt = {
+                'access': customer_config.get('jwt_access'),
+                'refresh': customer_config.get('jwt_refresh')
+            }
         except (configparser.NoSectionError, KeyError):
             token = None
+            jwt = None
 
         if token:
-            self.api.set_token(token)
+            self.api.set_token(token, token_type='token')
+        elif jwt:
+            self.api.set_token(jwt, token_type='jwt')
 
-        try:
-            user = self.api.account.get()
-            LOG.info('Using token for {}'.format(user['results'][0]['email']))
-            return True
-        except HttpClientError as err:
-            LOG.debug(err)
-            LOG.info('Token is illegal or has expired')
+        if self.api.token:
+            try:
+                user = self.api.account.get()
+                LOG.info('Using token for {}'.format(user['results'][0]['email']))
+                return True
+            except HttpClientError as err:
+                LOG.debug(err)
+                LOG.info('Token is illegal or has expired')
+
+        if not self.args.email:
+            LOG.error('User email is required: --user')
+            sys.exit(1)
 
         password = getpass.getpass()
         ok = self.api.login(email=self.args.email, password=password)

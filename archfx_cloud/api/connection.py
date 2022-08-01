@@ -208,7 +208,7 @@ class Api(object):
             self.domain = domain
 
         self.base_url = f"{self.domain}/{API_PREFIX}"
-        self.use_token = True
+
         if token_type:
             self.token_type = token_type
 
