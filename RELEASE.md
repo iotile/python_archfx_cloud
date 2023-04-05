@@ -2,6 +2,10 @@
 
 All major changes in each released version of the archfx-cloud plugin are listed here.
 
+## 0.15.0
+
+- Use the endpoint `/auth/user-info/` to get account information in the `BaseMain` class.
+
 ## 0.14.0
 
 - Add optional parameter to BaseMain constructor to give the config file path (.ini)

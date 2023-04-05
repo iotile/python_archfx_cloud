@@ -56,8 +56,8 @@ class MainTestCase(unittest.TestCase):
     @mock.patch('archfx_cloud.utils.main.argparse.ArgumentParser.parse_args')
     def test_main_login_token_file_ok(self, mock_request, mock_parse_args):
         mock_request.get(
-            'https://test.archfx.io/api/v1/account/',
-            text=json.dumps({'results': [{'email': 'user1@test.com'}]}),
+            'https://test.archfx.io/api/v1/auth/user-info/',
+            text=json.dumps({'email': 'user1@test.com'}),
         )
         mock_request.post(
             'https://test.archfx.io/api/v1/auth/logout/', status_code=204
@@ -75,7 +75,7 @@ class MainTestCase(unittest.TestCase):
         self.assertEqual(len(mock_request.request_history), 2)
         self.assertEqual(
             mock_request.request_history[0].url,
-            'https://test.archfx.io/api/v1/account/',
+            'https://test.archfx.io/api/v1/auth/user-info/',
         )
         self.assertEqual(
             mock_request.request_history[0].headers['Authorization'],
