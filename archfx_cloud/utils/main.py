@@ -128,8 +128,8 @@ class BaseMain(object):
 
         if self.api.token:
             try:
-                user = self.api.account.get()
-                LOG.info('Using token for {}'.format(user['results'][0]['email']))
+                user = getattr(self.api.auth, 'user-info').get()
+                LOG.info('Using token for {}'.format(user['email']))
                 return True
             except HttpClientError as err:
                 LOG.debug(err)
