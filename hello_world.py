@@ -39,6 +39,7 @@ class HelloWorld:
         self._sites = {}
         self._tree = {}
         self._area = {}
+        self._line = {}
 
     def __initialize_connection(self):
         # api = Api('https://arch.archfx.io')
@@ -118,39 +119,40 @@ class HelloWorld:
                 print("")
                 print(f"n: {n}, ", basic_area_info)
 
-        # result_dict: Dict = self.api.area.get()
-        # print("count", result_dict['count'])
-        # assert isinstance(result_dict, dict)
-        # if 'results' not in result_dict:
-        #     return None
-        # results = result_dict['results']
-        # for n, result in enumerate(results):
-        #     print("")
-        #     print(f"n: {n}", result)
-        # # import pdb; pdb.set_trace()
-        
 
-    # def query_areas_by_site(self):
-    #     result_dict: Dict = self.api.area.get(site='ps--0000-006c')
-    #     print("count", result_dict['count'])
-    #     assert isinstance(result_dict, dict)
-    #     if 'results' not in result_dict:
-    #         return None
-    #     results = result_dict['results']
-    #     for n, result in enumerate(results):
-    #         print("")
-    #         print(f"n: {n}", result)
-    #     # import pdb; pdb.set_trace()
+    def query_all_lines(self):
+        for area_slug_id in self._area.keys():
+            print("#" * 140)
+            print("area_slug_id", area_slug_id)
+            result_dict: Dict = self.api.line.get(area=area_slug_id)
+            for n, result in enumerate(result_dict['results']):
+                line_name = result.get('name', '')
+                line_slug_id = result.get('slug')
+                area_slug_id = result.get('area')
+                site_slug_id = result.get('site')
+                line_type = result.get('line_type')
+
+                area_info: Dict = self._area[area_slug_id]
+                basic_line_info = {'line_name': line_name, 'line_slug_id': line_slug_id, 
+                                   'area_slug_id': area_slug_id, 'site_slug_id': site_slug_id,
+                                   'line_type': line_type}
+                basic_line_info.update(area_info)
+                self._line[line_slug_id] = basic_line_info
+                print("*" * 40)
+                print("")
+                print(f"n: {n}, ", result)
+
 
 
     def save_result_so_far(self):
         """
             result.tmp was for just self._tree, self._sites
             result2.tmp    ->   self._tree, self._sites, self._area
+            result3.tmp    ->   self._tree, self._sites, self._area, self._line
 
         """
-        with open("result2.tmp", "wb") as writer:
-            writer.write(pickle.dumps([self._tree, self._sites, self._area]))
+        with open("result3.tmp", "wb") as writer:
+            writer.write(pickle.dumps([self._tree, self._sites, self._area, self._line]))
 
     def read_result_so_far(self):
         with open("result2.tmp", "rb") as reader:
@@ -164,11 +166,12 @@ class HelloWorld:
         # self.query_all_sites(org_name_list)
         # self.query_all_areas()
 
-        # self.save_result_so_far()
         self.read_result_so_far()
+        self.query_all_lines()
+        self.save_result_so_far()
 
         # self.query_all_areas()
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         # self.query_areas_by_site()
 
 
