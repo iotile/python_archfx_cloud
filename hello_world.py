@@ -2,6 +2,7 @@ import os
 from cryptography.fernet import Fernet
 from archfx_cloud.api.connection import Api
 from typing import Dict, List
+import pickle
 
 class HelloWorld:
 
@@ -37,6 +38,7 @@ class HelloWorld:
         self.__initialize_connection()
         self._sites = {}
         self._tree = {}
+        self._area = {}
 
     def __initialize_connection(self):
         # api = Api('https://arch.archfx.io')
@@ -47,8 +49,6 @@ class HelloWorld:
         if ok:
             print("logged in successfully!")
             self.api = api
-            # Do something
-            
             # api.logout()
 
 
@@ -79,7 +79,6 @@ class HelloWorld:
     def query_specific_site(self, org_name: str):
         result_dict: Dict = self.api.site.get(org=org_name)
         print(org_name, result_dict['count'])
-        # import pdb; pdb.set_trace()
         assert isinstance(result_dict, dict)
         if 'results' not in result_dict:
             return None
@@ -88,8 +87,6 @@ class HelloWorld:
             org = str(result.get('org', ''))
             site_name = result.get('name', '')
 
-            # if ('demo' in org) or ('-it' in org):
-            #     continue
             site_slug_id = result['id']
             basic_site_info = {'site_name': site_name, 'site_slug_id': site_slug_id, 'org': org}
             self._sites[site_slug_id] = basic_site_info
@@ -104,10 +101,75 @@ class HelloWorld:
         # import pdb; pdb.set_trace()
 
 
+    def query_all_areas(self):
+        for site_slug_id in self._sites.keys():
+            result_dict: Dict = self.api.area.get(site=site_slug_id)
+            for n, result in enumerate(result_dict['results']):
+                area_name = result.get('name', '')
+                area_slug_id = result.get('slug')
+                site_slug_id = result.get('site')
+                area_type = result.get('area_type')
+                site_info: Dict = self._sites[site_slug_id]
+                basic_area_info = {'area_name': area_name, 'area_slug_id': area_slug_id, 'area_type': area_type,
+                                   'site_slug_id': site_slug_id}
+                basic_area_info.update(site_info)
+                self._area[area_slug_id] = basic_area_info
+                print("*" * 40)
+                print("")
+                print(f"n: {n}, ", basic_area_info)
+
+        # result_dict: Dict = self.api.area.get()
+        # print("count", result_dict['count'])
+        # assert isinstance(result_dict, dict)
+        # if 'results' not in result_dict:
+        #     return None
+        # results = result_dict['results']
+        # for n, result in enumerate(results):
+        #     print("")
+        #     print(f"n: {n}", result)
+        # # import pdb; pdb.set_trace()
+        
+
+    # def query_areas_by_site(self):
+    #     result_dict: Dict = self.api.area.get(site='ps--0000-006c')
+    #     print("count", result_dict['count'])
+    #     assert isinstance(result_dict, dict)
+    #     if 'results' not in result_dict:
+    #         return None
+    #     results = result_dict['results']
+    #     for n, result in enumerate(results):
+    #         print("")
+    #         print(f"n: {n}", result)
+    #     # import pdb; pdb.set_trace()
+
+
+    def save_result_so_far(self):
+        """
+            result.tmp was for just self._tree, self._sites
+            result2.tmp    ->   self._tree, self._sites, self._area
+
+        """
+        with open("result2.tmp", "wb") as writer:
+            writer.write(pickle.dumps([self._tree, self._sites, self._area]))
+
+    def read_result_so_far(self):
+        with open("result2.tmp", "rb") as reader:
+            data = reader.read()
+            result = pickle.loads(data)
+            self._tree, self._sites, self._area = result
+
+
     def main(self):
-        org_name_list = self.query_all_orgs()
-        self.query_all_sites(org_name_list)
-        # import pdb; pdb.set_trace()
+        # org_name_list = self.query_all_orgs()
+        # self.query_all_sites(org_name_list)
+        # self.query_all_areas()
+
+        # self.save_result_so_far()
+        self.read_result_so_far()
+
+        # self.query_all_areas()
+        import pdb; pdb.set_trace()
+        # self.query_areas_by_site()
 
 
 if __name__ == "__main__":
