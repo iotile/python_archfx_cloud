@@ -40,6 +40,7 @@ class HelloWorld:
         self._tree = {}
         self._area = {}
         self._line = {}
+        self._device = {}
 
     def __initialize_connection(self):
         # api = Api('https://arch.archfx.io')
@@ -143,22 +144,52 @@ class HelloWorld:
                 print(f"n: {n}, ", result)
 
 
+    def query_all_devices(self):
+        num_lines = len(self._line.keys())
+        for nn, line_slug_id in enumerate(self._line.keys()):
+            print("#" * 140)
+            print(f"nn: {nn} out of {num_lines}, line_slug_id", line_slug_id)
+            result_dict: Dict = self.api.device.get(parent=line_slug_id)
+            for n, result in enumerate(result_dict['results']):
+                name_label = result.get('label')
+                device_slug_id = result.get('slug')
+                line_slug_id = result.get('parent')
+                connector_type = result.get('connector_type')
+                state = result.get('state')
+
+
+                line_info: Dict = self._line[line_slug_id]
+                basic_device_info = {'name_label': name_label, 'device_slug_id': device_slug_id,
+                                   'line_slug_id': line_slug_id, 'connector_type': connector_type,
+                                   'state': state}
+                basic_device_info.update(line_info)
+            #     basic_line_info = {'line_name': line_name, 'line_slug_id': line_slug_id, 
+            #                        'area_slug_id': area_slug_id, 'site_slug_id': site_slug_id,
+            #                        'line_type': line_type}
+            #     self._line[line_slug_id] = basic_line_info
+                self._device[device_slug_id] = basic_device_info
+                print("*" * 40)
+                print("")
+                print(f"n: {n}, ", result)
+
+
 
     def save_result_so_far(self):
         """
             result.tmp was for just self._tree, self._sites
             result2.tmp    ->   self._tree, self._sites, self._area
             result3.tmp    ->   self._tree, self._sites, self._area, self._line
+            result4.tmp    ->   self._tree, self._sites, self._area, self._line, self._device
 
         """
-        with open("result3.tmp", "wb") as writer:
-            writer.write(pickle.dumps([self._tree, self._sites, self._area, self._line]))
+        with open("result4.tmp", "wb") as writer:
+            writer.write(pickle.dumps([self._tree, self._sites, self._area, self._line, self._device]))
 
     def read_result_so_far(self):
-        with open("result2.tmp", "rb") as reader:
+        with open("result3.tmp", "rb") as reader:
             data = reader.read()
             result = pickle.loads(data)
-            self._tree, self._sites, self._area = result
+            self._tree, self._sites, self._area, self._line = result
 
 
     def main(self):
@@ -166,8 +197,10 @@ class HelloWorld:
         # self.query_all_sites(org_name_list)
         # self.query_all_areas()
 
+        # self.query_all_lines()
+        # self.save_result_so_far()
         self.read_result_so_far()
-        self.query_all_lines()
+        self.query_all_devices()
         self.save_result_so_far()
 
         # self.query_all_areas()
