@@ -186,10 +186,16 @@ class HelloWorld:
             writer.write(pickle.dumps([self._tree, self._sites, self._area, self._line, self._device]))
 
     def read_result_so_far(self):
-        with open("result3.tmp", "rb") as reader:
+        with open("result4.tmp", "rb") as reader:
             data = reader.read()
             result = pickle.loads(data)
-            self._tree, self._sites, self._area, self._line = result
+            self._tree, self._sites, self._area, self._line, self._device = result
+
+    def iter_over_devices(self):
+        for n, device_slug_id in enumerate(self._device):
+            print("-" * 60)
+            print("")
+            print(n, self._device[device_slug_id])
 
 
     def main(self):
@@ -199,9 +205,11 @@ class HelloWorld:
 
         # self.query_all_lines()
         # self.save_result_so_far()
+
+        # self.query_all_devices()
+        # self.save_result_so_far()
         self.read_result_so_far()
-        self.query_all_devices()
-        self.save_result_so_far()
+        self.iter_over_devices()
 
         # self.query_all_areas()
         # import pdb; pdb.set_trace()
