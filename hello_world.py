@@ -2,8 +2,6 @@ import os
 from cryptography.fernet import Fernet
 from archfx_cloud.api.connection import Api
 
-c = Api('https://arch.archfx.io')
-
 
 class HelloWorld:
 
@@ -19,15 +17,11 @@ class HelloWorld:
         key = self.read_token_file()
         f = Fernet(key)
         secret = f.encrypt(b'Gamma!23')
-        print(f"secret: {secret}")
-        # token = f.encrypt(b"my deep dark secret")
-        # token
-        # b'...'
         token = self.read_enc_passwd()
         passwd = f.decrypt(token)
-        passwd = passwd.decode()
+        passwd = passwd.decode()    # convert to string
+        assert isinstance(passwd, str)
         return passwd
-        # b'my deep dark secret'
 
 
 
@@ -43,14 +37,48 @@ class HelloWorld:
         self.__initialize_connection()
 
     def __initialize_connection(self):
+        api = Api('https://arch.archfx.io')
+
         passwd = self.get_password()
-        ok = c.login(email=self.email, password=passwd)
+        ok = api.login(email=self.email, password=passwd)
         if ok:
             print("logged in successfully!")
+            self.api = api
             # Do something
             
-            c.logout()
+            # api.logout()
+
+    def query_all_orgs(self):
+        result_dict = self.api.org.get()
+        assert isinstance(result_dict, dict)
+        # print(result_dict)
+        if 'results' not in result_dict:
+            return None
+        results = result_dict['results']
+        for n, result in enumerate(results):
+            result.pop('avatar')
+            if 'thumbnail' in result: result.pop('thumbnail')
+            print("")
+            print(n, result)
+        # import pdb; pdb.set_trace()
+
+    def query_all_sites(self):
+        result_dict = self.api.site.get()
+        # print(result_dict)
+        # import pdb; pdb.set_trace()
+        assert isinstance(result_dict, dict)
+        if 'results' not in result_dict:
+            return None
+        results = result_dict['results']
+        for n, result in enumerate(results):
+        #     result.pop('avatar')
+        #     if 'thumbnail' in result: result.pop('thumbnail')
+            print("")
+            print(n, result)
+
 
 
 if __name__ == "__main__":
     hw = HelloWorld()
+    # hw.query_all_orgs()
+    hw.query_all_sites()
