@@ -1,11 +1,11 @@
 import os
 from cryptography.fernet import Fernet
-from archfx_cloud.api.connection import Api
 from typing import Dict, List
 import pickle
+import pandas as pd
+from archfx_cloud.api.connection import Api
 
-
-DEBUG = True
+DEBUG = False
 
 
 class QueryFactoryMap:
@@ -17,7 +17,7 @@ class QueryFactoryMap:
         self._tree = {}
         self._area = {}
         self._line = {}
-        self._device = {}
+        self._devices = {}
 
     def __initialize_connection(self):
         # api = Api('https://arch.archfx.io')
@@ -30,7 +30,8 @@ class QueryFactoryMap:
             self.api = api
             # api.logout()
 
-
+    # ----------------------------------------------------------------------------------------------------------------
+    # deal with secrets
     def read_enc_passwd(self):
         with open(".archfx_enc_passwd", "rb") as reader:
             return reader.read()
@@ -53,6 +54,20 @@ class QueryFactoryMap:
         with open(filename, "rb") as reader:
             key = reader.read()
             return key
+
+
+    # ----------------------------------------------------------------------------------------------------------------
+    # factory_map generating code
+    def create_factory_map(self):
+        org_name_list = self.query_all_orgs()
+        self.query_all_sites(org_name_list)
+        self.query_all_areas()
+
+        self.query_all_lines()
+        self.save_result_so_far()
+
+        self.query_all_devices()
+        self.save_result_so_far()
 
 
     def query_all_orgs(self) -> List[str]:
@@ -79,7 +94,7 @@ class QueryFactoryMap:
     def query_all_sites(self, org_name_list=List[str]):
         for org_name in org_name_list:
             self._tree[org_name] = {}
-            print("#" * 140)
+            print(f"{'#' * 60}     {org_name}        {'#' * 60}")
             self.query_specific_site(org_name)
 
 
@@ -128,7 +143,8 @@ class QueryFactoryMap:
 
     def query_all_lines(self):
         for area_slug_id in self._area.keys():
-            print("#" * 140)
+            print(f"{'$' * 60}     area_slug_id: {area_slug_id}        {'$' * 60}")
+
             print("area_slug_id", area_slug_id)
             result_dict: Dict = self.api.line.get(area=area_slug_id)
             for n, result in enumerate(result_dict["results"]):
@@ -158,7 +174,7 @@ class QueryFactoryMap:
     def query_all_devices(self):
         num_lines = len(self._line.keys())
         for nn, line_slug_id in enumerate(self._line.keys()):
-            print("#" * 140)
+            print(f"{'%' * 60}     {line_slug_id}        {'%' * 60}")
             print(f"nn: {nn} out of {num_lines}, line_slug_id", line_slug_id)
             result_dict: Dict = self.api.device.get(parent=line_slug_id)
             for n, result in enumerate(result_dict["results"]):
@@ -177,7 +193,7 @@ class QueryFactoryMap:
                     "state": state,
                 }
                 basic_device_info.update(line_info)
-                self._device[device_slug_id] = basic_device_info
+                self._devices[device_slug_id] = basic_device_info
                 area_slug_id = basic_device_info.get("area_slug_id")
                 site_slug_id = basic_device_info.get("site_slug_id")
 
@@ -190,34 +206,38 @@ class QueryFactoryMap:
 
     def save_result_so_far(self):
         with open("result5B.tmp", "wb") as writer:
-            writer.write(pickle.dumps([self._tree, self._sites, self._area, self._line, self._device]))     # noqa
+            writer.write(pickle.dumps([self._tree, self._sites, self._area, self._line, self._devices]))     # noqa
 
-    def read_result_so_far(self):
-        with open("result4.tmp", "rb") as reader:
-            data = reader.read()
-            result = pickle.loads(data)
-            self._tree, self._sites, self._area, self._line, self._device = result  # noqa
 
-    def iter_over_devices(self):
-        for n, device_slug_id in enumerate(self._device):
-            print("-" * 60)
-            print("")
-            print(n, self._device[device_slug_id])
-
-    def create_factory_map(self):
-        org_name_list = self.query_all_orgs()
-        self.query_all_sites(org_name_list)
-        self.query_all_areas()
-
-        self.query_all_lines()
-        self.save_result_so_far()
-
-        self.query_all_devices()
-        self.save_result_so_far()
-
+    # ----------------------------------------------------------------------------------------------------------------
     def display_all_devices(self):
         self.read_result_so_far()
         self.iter_over_devices()
+
+
+    def read_result_so_far(self):
+        with open("result5B.tmp", "rb") as reader:
+            data = reader.read()
+            result = pickle.loads(data)
+            self._tree, self._sites, self._area, self._line, self._devices = result  # noqa
+
+
+    def iter_over_devices(self):
+        for n, device_slug_id in enumerate(self._devices):
+            print("-" * 60)
+            print("")
+            print(n, self._devices[device_slug_id])
+
+
+    # ----------------------------------------------------------------------------------------------------------------
+    # convert to pandas
+    def result_to_dataframe(self):
+        record_list = []
+        for x in self._devices:
+            record_list.append(self._devices[x])
+        df = pd.DataFrame(record_list)
+        print(df)
+        df.to_csv("result5C.csv")
 
 
 if __name__ == "__main__":
@@ -225,3 +245,5 @@ if __name__ == "__main__":
     fm = QueryFactoryMap(email)
     fm.create_factory_map()
     # fm.display_all_devices()
+    # fm.read_result_so_far()
+    fm.result_to_dataframe()
