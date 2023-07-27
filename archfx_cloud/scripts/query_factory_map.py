@@ -1,3 +1,6 @@
+"""
+    ADT-287  Example code for creating a full factory map for flex.
+"""
 import os
 from cryptography.fernet import Fernet
 from typing import Dict, List
