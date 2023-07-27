@@ -4,10 +4,32 @@ from archfx_cloud.api.connection import Api
 from typing import Dict, List
 import pickle
 
-class HelloWorld:
 
-    email = 'mbrady@archsys.io'
-    token_filename = '.cloud_api_token'
+DEBUG = True
+
+class QueryFactoryMap:
+
+    def __init__(self, email: str):
+        self._email = email
+        self.token_filename = '.cloud_api_token'
+        self.__initialize_connection()
+        self._sites = {}
+        self._tree = {}
+        self._area = {}
+        self._line = {}
+        self._device = {}
+
+    def __initialize_connection(self):
+        # api = Api('https://arch.archfx.io')
+        api = Api('https://flex.archfx.io')
+
+        passwd = self.get_password()
+        ok = api.login(email=self._email, password=passwd)
+        if ok:
+            print("logged in successfully!")
+            self.api = api
+            # api.logout()
+    
 
     def read_enc_passwd(self):
         with open('.archfx_enc_passwd', 'rb') as reader:
@@ -34,26 +56,6 @@ class HelloWorld:
             key = reader.read()
             return key
 
-    def __init__(self):
-        self.__initialize_connection()
-        self._sites = {}
-        self._tree = {}
-        self._area = {}
-        self._line = {}
-        self._device = {}
-
-    def __initialize_connection(self):
-        # api = Api('https://arch.archfx.io')
-        api = Api('https://flex.archfx.io')
-
-        passwd = self.get_password()
-        ok = api.login(email=self.email, password=passwd)
-        if ok:
-            print("logged in successfully!")
-            self.api = api
-            # api.logout()
-
-
     def query_all_orgs(self) -> List[str]:
         result_dict = self.api.org.get()
         assert isinstance(result_dict, dict)
@@ -63,11 +65,14 @@ class HelloWorld:
         results = result_dict['results']
         org_name_list = []
         for n, result in enumerate(results):
+            org_name = result.get('slug')
+            if DEBUG:
+                if org_name != "flex-smt":
+                    continue
             result.pop('avatar')
             if 'thumbnail' in result: result.pop('thumbnail')
             print("")
             print(n, result)
-            org_name = result.get('slug')
             org_name_list.append(org_name)
         return org_name_list
 
@@ -86,21 +91,17 @@ class HelloWorld:
             return None
         results = result_dict['results']
         for n, result in enumerate(results):
+            site_slug_id = result['id']
+            if DEBUG:
+                if site_slug_id != 'ps--0000-0027':
+                    continue
             org = str(result.get('org', ''))
             site_name = result.get('name', '')
 
-            site_slug_id = result['id']
             basic_site_info = {'site_name': site_name, 'site_slug_id': site_slug_id, 'org': org}
             self._sites[site_slug_id] = basic_site_info
-            self._tree[org][site_slug_id] = basic_site_info
-
-            # print("*" * 40)
-            # print("")
-            # print("org ", org)
-            # print("site_name", site_name)
-            # print(n, result)
-        print(org_name, len(self._sites))
-        # import pdb; pdb.set_trace()
+            if not site_slug_id in self._tree[org]:
+                self._tree[org][site_slug_id] = {}
 
 
     def query_all_areas(self):
@@ -116,6 +117,8 @@ class HelloWorld:
                                    'site_slug_id': site_slug_id}
                 basic_area_info.update(site_info)
                 self._area[area_slug_id] = basic_area_info
+                # self._tree[org][site_slug_id] = basic_site_info
+
                 print("*" * 40)
                 print("")
                 print(f"n: {n}, ", basic_area_info)
@@ -163,10 +166,6 @@ class HelloWorld:
                                    'line_slug_id': line_slug_id, 'connector_type': connector_type,
                                    'state': state}
                 basic_device_info.update(line_info)
-            #     basic_line_info = {'line_name': line_name, 'line_slug_id': line_slug_id, 
-            #                        'area_slug_id': area_slug_id, 'site_slug_id': site_slug_id,
-            #                        'line_type': line_type}
-            #     self._line[line_slug_id] = basic_line_info
                 self._device[device_slug_id] = basic_device_info
                 print("*" * 40)
                 print("")
@@ -176,13 +175,10 @@ class HelloWorld:
 
     def save_result_so_far(self):
         """
-            result.tmp was for just self._tree, self._sites
-            result2.tmp    ->   self._tree, self._sites, self._area
-            result3.tmp    ->   self._tree, self._sites, self._area, self._line
             result4.tmp    ->   self._tree, self._sites, self._area, self._line, self._device
 
         """
-        with open("result5A.tmp", "wb") as writer:
+        with open("result5B.tmp", "wb") as writer:
             writer.write(pickle.dumps([self._tree, self._sites, self._area, self._line, self._device]))
 
     def read_result_so_far(self):
@@ -198,7 +194,7 @@ class HelloWorld:
             print(n, self._device[device_slug_id])
 
 
-    def main(self):
+    def create_factory_map(self):
         org_name_list = self.query_all_orgs()
         self.query_all_sites(org_name_list)
         self.query_all_areas()
@@ -209,8 +205,9 @@ class HelloWorld:
         self.query_all_devices()
         self.save_result_so_far()
 
-        # self.read_result_so_far()
-        # self.iter_over_devices()
+    def display_all_devices(self):
+        self.read_result_so_far()
+        self.iter_over_devices()
 
         # self.query_all_areas()
         # import pdb; pdb.set_trace()
@@ -218,5 +215,7 @@ class HelloWorld:
 
 
 if __name__ == "__main__":
-    hw = HelloWorld()
-    hw.main()
+    email = 'mbrady@archsys.io'
+    fm = QueryFactoryMap(email)
+    fm.create_factory_map()
+    # fm.display_all_devices()
