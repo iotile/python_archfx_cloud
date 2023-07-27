@@ -30,19 +30,21 @@ class QueryFactoryMap:
             self.api = api
             # api.logout()
 
+
     def read_enc_passwd(self):
         with open(".archfx_enc_passwd", "rb") as reader:
             return reader.read()
 
+
     def get_password(self) -> str:
         key = self.read_token_file()
         f = Fernet(key)
-        secret = f.encrypt(b"Gamma!23")
         token = self.read_enc_passwd()
         passwd = f.decrypt(token)
         passwd = passwd.decode()  # convert to string
         assert isinstance(passwd, str)
         return passwd
+
 
     def read_token_file(self):
         filename = os.path.abspath(self.token_filename)
@@ -52,10 +54,10 @@ class QueryFactoryMap:
             key = reader.read()
             return key
 
+
     def query_all_orgs(self) -> List[str]:
         result_dict = self.api.org.get()
         assert isinstance(result_dict, dict)
-        # print(result_dict)
         if "results" not in result_dict:
             return None
         results = result_dict["results"]
@@ -73,11 +75,13 @@ class QueryFactoryMap:
             org_name_list.append(org_name)
         return org_name_list
 
+
     def query_all_sites(self, org_name_list=List[str]):
         for org_name in org_name_list:
             self._tree[org_name] = {}
             print("#" * 140)
             self.query_specific_site(org_name)
+
 
     def query_specific_site(self, org_name: str):
         result_dict: Dict = self.api.site.get(org=org_name)
@@ -93,10 +97,12 @@ class QueryFactoryMap:
             org = str(result.get("org", ""))
             site_name = result.get("name", "")
 
-            basic_site_info = {"site_name": site_name, "site_slug_id": site_slug_id, "org": org}
+            basic_site_info = {"site_name": site_name,
+                               "site_slug_id": site_slug_id, "org": org}
             self._sites[site_slug_id] = basic_site_info
-            if not site_slug_id in self._tree[org]:
+            if site_slug_id not in self._tree[org]:
                 self._tree[org][site_slug_id] = {}
+
 
     def query_all_areas(self):
         for site_slug_id in self._sites.keys():
@@ -119,9 +125,6 @@ class QueryFactoryMap:
                 if area_slug_id not in self._tree[org][site_slug_id]:
                     self._tree[org][site_slug_id][area_slug_id] = {}
 
-                # print("*" * 40)
-                # print("")
-                # print(f"n: {n}, ", basic_area_info)
 
     def query_all_lines(self):
         for area_slug_id in self._area.keys():
@@ -146,8 +149,8 @@ class QueryFactoryMap:
                 basic_line_info.update(area_info)
                 self._line[line_slug_id] = basic_line_info
                 org = area_info["org"]
-                if line_slug_id not in self._tree[org][site_slug_id][area_slug_id]:
-                    self._tree[org][site_slug_id][area_slug_id][line_slug_id] = {}
+                if line_slug_id not in self._tree[org][site_slug_id][area_slug_id]:     # pylint: disable=line-too-long  # noqa
+                    self._tree[org][site_slug_id][area_slug_id][line_slug_id] = {}  # noqa
                 print("*" * 40)
                 print("")
                 print(f"n: {n}, ", result)
@@ -179,26 +182,21 @@ class QueryFactoryMap:
                 site_slug_id = basic_device_info.get("site_slug_id")
 
                 org = line_info["org"]
-                # import pdb; pdb.set_trace()
-                if device_slug_id not in self._tree[org][site_slug_id][area_slug_id][line_slug_id]:
-                    self._tree[org][site_slug_id][area_slug_id][line_slug_id][device_slug_id] = basic_device_info
+                if device_slug_id not in self._tree[org][site_slug_id][area_slug_id][line_slug_id]:     # noqa
+                    self._tree[org][site_slug_id][area_slug_id][line_slug_id][device_slug_id] = basic_device_info   # noqa
                 print("*" * 40)
                 print("")
                 print(f"n: {n}, ", result)
 
     def save_result_so_far(self):
-        """
-        result4.tmp    ->   self._tree, self._sites, self._area, self._line, self._device
-
-        """
         with open("result5B.tmp", "wb") as writer:
-            writer.write(pickle.dumps([self._tree, self._sites, self._area, self._line, self._device]))
+            writer.write(pickle.dumps([self._tree, self._sites, self._area, self._line, self._device]))     # noqa
 
     def read_result_so_far(self):
         with open("result4.tmp", "rb") as reader:
             data = reader.read()
             result = pickle.loads(data)
-            self._tree, self._sites, self._area, self._line, self._device = result
+            self._tree, self._sites, self._area, self._line, self._device = result  # noqa
 
     def iter_over_devices(self):
         for n, device_slug_id in enumerate(self._device):
@@ -220,10 +218,6 @@ class QueryFactoryMap:
     def display_all_devices(self):
         self.read_result_so_far()
         self.iter_over_devices()
-
-        # self.query_all_areas()
-        # import pdb; pdb.set_trace()
-        # self.query_areas_by_site()
 
 
 if __name__ == "__main__":
