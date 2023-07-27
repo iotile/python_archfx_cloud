@@ -182,7 +182,7 @@ class HelloWorld:
             result4.tmp    ->   self._tree, self._sites, self._area, self._line, self._device
 
         """
-        with open("result4.tmp", "wb") as writer:
+        with open("result5A.tmp", "wb") as writer:
             writer.write(pickle.dumps([self._tree, self._sites, self._area, self._line, self._device]))
 
     def read_result_so_far(self):
@@ -199,17 +199,18 @@ class HelloWorld:
 
 
     def main(self):
-        # org_name_list = self.query_all_orgs()
-        # self.query_all_sites(org_name_list)
-        # self.query_all_areas()
+        org_name_list = self.query_all_orgs()
+        self.query_all_sites(org_name_list)
+        self.query_all_areas()
 
-        # self.query_all_lines()
-        # self.save_result_so_far()
+        self.query_all_lines()
+        self.save_result_so_far()
 
-        # self.query_all_devices()
-        # self.save_result_so_far()
-        self.read_result_so_far()
-        self.iter_over_devices()
+        self.query_all_devices()
+        self.save_result_so_far()
+
+        # self.read_result_so_far()
+        # self.iter_over_devices()
 
         # self.query_all_areas()
         # import pdb; pdb.set_trace()
