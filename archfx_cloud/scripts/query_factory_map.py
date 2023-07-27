@@ -85,7 +85,6 @@ class QueryFactoryMap:
 
     def query_specific_site(self, org_name: str):
         result_dict: Dict = self.api.site.get(org=org_name)
-        print(org_name, result_dict['count'])
         assert isinstance(result_dict, dict)
         if 'results' not in result_dict:
             return None
@@ -117,11 +116,13 @@ class QueryFactoryMap:
                                    'site_slug_id': site_slug_id}
                 basic_area_info.update(site_info)
                 self._area[area_slug_id] = basic_area_info
-                # self._tree[org][site_slug_id] = basic_site_info
+                org = site_info['org']
+                if area_slug_id not in self._tree[org][site_slug_id]:
+                    self._tree[org][site_slug_id][area_slug_id] = {}
 
-                print("*" * 40)
-                print("")
-                print(f"n: {n}, ", basic_area_info)
+                # print("*" * 40)
+                # print("")
+                # print(f"n: {n}, ", basic_area_info)
 
 
     def query_all_lines(self):
@@ -142,6 +143,9 @@ class QueryFactoryMap:
                                    'line_type': line_type}
                 basic_line_info.update(area_info)
                 self._line[line_slug_id] = basic_line_info
+                org = area_info['org']
+                if line_slug_id not in self._tree[org][site_slug_id][area_slug_id]:
+                    self._tree[org][site_slug_id][area_slug_id][line_slug_id] = {}
                 print("*" * 40)
                 print("")
                 print(f"n: {n}, ", result)
@@ -167,6 +171,13 @@ class QueryFactoryMap:
                                    'state': state}
                 basic_device_info.update(line_info)
                 self._device[device_slug_id] = basic_device_info
+                area_slug_id = basic_device_info.get('area_slug_id')
+                site_slug_id = basic_device_info.get('site_slug_id')
+
+                org = line_info['org']
+                # import pdb; pdb.set_trace()
+                if device_slug_id not in self._tree[org][site_slug_id][area_slug_id][line_slug_id]:
+                    self._tree[org][site_slug_id][area_slug_id][line_slug_id][device_slug_id] = basic_device_info
                 print("*" * 40)
                 print("")
                 print(f"n: {n}, ", result)
