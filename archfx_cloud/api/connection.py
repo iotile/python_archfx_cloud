@@ -6,7 +6,7 @@ Django Rest Frameworks, and the use of TokenAuthentication.
 Usage:
     # Assuming
     # v1_api_router.register(r'some_model', SomeModelViewSet)
-    api = Api('http://127.0.0.1:8000')
+    api = Api('http://localhost')
     api.login(email='user1@test.com', password='user1')
     obj_list = api.some_model.get()
     logger.debug('Found {0} groups'.format(obj_list['count']))
