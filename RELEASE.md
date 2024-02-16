@@ -2,6 +2,10 @@
 
 All major changes in each released version of the archfx-cloud plugin are listed here.
 
+## 0.16.0
+
+- Updated `dev` domain in `BaseMain` class to be `http://localhost`.
+
 ## 0.15.0
 
 - Use the endpoint `/auth/user-info/` to get account information in the `BaseMain` class.

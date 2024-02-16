@@ -95,7 +95,7 @@ class BaseMain(object):
         """
         SERVER_TYPE = {
             'prod': 'https://{}.archfx.io',
-            'dev': 'http://127.0.0.1:8000'
+            'dev': 'http://localhost'
         }
 
         domain_template = SERVER_TYPE[self.args.server_type]
