@@ -2,6 +2,11 @@
 
 All major changes in each released version of the archfx-cloud plugin are listed here.
 
+## 0.17.0
+
+- Made `ArchFxCloudSlug` (and all its derived classes) usable as a mapping key by overriding the `__hash__()` method.
+- Made `ArchFxCloudSlug` (and all its derived classes) considered equal if their `slug` attributes are equal by overriding the `__eq__()` method.
+
 ## 0.16.0
 
 - Updated `dev` domain in `BaseMain` class to be `http://localhost`.
