@@ -36,7 +36,15 @@ class ArchFxCloudSlug(object):
     _slug = None
 
     def __str__(self):
-        return self._slug
+        return self._slug or ''
+
+    def __hash__(self):
+        return hash(self._slug)
+
+    def __eq__(self, other):
+        if isinstance(other, ArchFxCloudSlug):
+            return self._slug == other._slug
+        return super().__eq__(other)
 
     def formatted_id(self):
         parts = gid_split(self._slug)

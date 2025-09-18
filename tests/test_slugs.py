@@ -33,6 +33,21 @@ def test_ArchFxVariableID(name, input, formatted, scope, var):
     assert result.scope == scope
     assert result.scope_hex == f"{scope:04x}"
 
+    other = ArchFxVariableID(input)
+    assert str(result) == str(other)
+    assert hash(result) == hash(other)
+    assert result == other
+
+    other2 = ArchFxVariableID('9999-9999')
+    assert str(result) != str(other2)
+    assert hash(result) != hash(other2)
+    assert result != other2
+
+    mapping = {result: 'value'}
+    assert mapping[result] == 'value'
+    assert mapping[other] == 'value'
+    assert mapping.get(other2) is None
+
 
 class SlugTestCase(unittest.TestCase):
 
